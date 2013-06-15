@@ -43,8 +43,12 @@ post '/' do
 
     # If already exists
     status 409
-    return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" } if entry = Entry.first(:subdomain => params[:subdomain])
-    return { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" } if entry = Entry.first(:public_key => params[:public_key])
+    if entry = Entry.first(:subdomain => params[:subdomain])
+        return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }
+    end
+    if entry = Entry.first(:public_key => params[:public_key])
+        return { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" }
+    end
 
     # Process
     entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip)
