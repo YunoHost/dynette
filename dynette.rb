@@ -7,6 +7,7 @@ require 'json'
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "pgsql://root:yayaya@localhost/dynette")
 DOMAIN = "yoyoyo.fr"
+ALLOWED_IP = "82.242.206.127"
 
 class Entry
     include DataMapper::Resource
@@ -36,18 +37,18 @@ post '/' do
     content_type :json
     # Check params
     status 400
-    return { :error => "Please indicate a subdomain" } unless params.has_key?("subdomain")
-    return { :error => "Please indicate a public key" } unless params.has_key?("public_key")
-    return { :error => "Subdomain is invalid: #{params[:subdomain]}.#{DOMAIN}" } unless params[:subdomain].match /^[a-z0-9-]{3,16}$/
-    return { :error => "Key is invalid: #{params[:public_key]}" } unless params[:public_key].match /^[a-z0-9]{22}==$/i
+    return { :error => "Please indicate a subdomain" }.to_json unless params.has_key?("subdomain")
+    return { :error => "Please indicate a public key" }.to_json unless params.has_key?("public_key")
+    return { :error => "Subdomain is invalid: #{params[:subdomain]}.#{DOMAIN}" }.to_json unless params[:subdomain].match /^[a-z0-9-]{3,16}$/
+    return { :error => "Key is invalid: #{params[:public_key]}" }.to_json unless params[:public_key].match /^[a-z0-9]{22}==$/i
 
     # If already exists
     status 409
     if entry = Entry.first(:subdomain => params[:subdomain])
-        return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }
+        return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }.to_json
     end
     if entry = Entry.first(:public_key => params[:public_key])
-        return { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" }
+        return { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" }.to_json
     end
 
     # Process
@@ -58,7 +59,7 @@ post '/' do
         return { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
     else
         status 412
-        return { :error => "A problem occured during DNS registration" }
+        return { :error => "A problem occured during DNS registration" }.to_json
     end
 end
 
@@ -66,8 +67,8 @@ put '/' do
     content_type :json
     # Check params
     status 400
-    return { :error => "Please indicate a public key" } unless params.has_key?("public_key")
-    return { :error => "Key is invalid: #{params[:public_key]}" } unless params[:public_key].match /^[a-z0-9]{22}==$/i
+    return { :error => "Please indicate a public key" }.to_json unless params.has_key?("public_key")
+    return { :error => "Key is invalid: #{params[:public_key]}" }.to_json unless params[:public_key].match /^[a-z0-9]{22}==$/i
 
     entry = Entry.first(:public_key => params[:public_key])
     unless request.ip == entry.current_ip
@@ -79,17 +80,27 @@ put '/' do
         return { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
     else
         status 412
-        return { :error => "A problem occured during DNS update" }
+        return { :error => "A problem occured during DNS update" }.to_json
     end
 end
 
 get '/all' do
-    unless request.ip == "82.242.206.127"
+    unless request.ip == ALLOWED_IP
         status 403
         return "Access denied"
     end
     content_type :json
     Entry.all.to_json
 end
+
+get '/ips' do
+    unless request.ip == ALLOWED_IP
+        status 403
+        return "Access denied"
+    end
+    content_type :json
+    Entry.first(:public_key => params[:public_key]).ips.ip_addr.to_json
+end
+
 
 DataMapper.auto_upgrade!
