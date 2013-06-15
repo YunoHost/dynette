@@ -8,6 +8,7 @@ require 'json'
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
 DOMAIN = "yoyoyo.fr"
 ALLOWED_IP = "82.196.13.142"
+#ALLOWED_IP = "127.0.0.1"
 
 class Entry
     include DataMapper::Resource
@@ -46,6 +47,7 @@ before do
     if Ipban.first(:ip_addr => request.ip)
         halt 410, "Your ip is banned from the service"
     end
+    pass if %w[test all ban unban].include? request.path_info.split('/')[1]
     if iplog = Iplog.last(:ip_addr => request.ip)
         if iplog.visited_at.to_time > Time.now - 30
             halt 410, "Please wait 30sec\n"
@@ -60,6 +62,22 @@ end
 get '/' do
     "Wanna play the dynette ?"
 end
+
+get '/test/:subdomain' do
+    content_type :json
+    unless params[:subdomain].match /^[a-z0-9-]{3,16}$/
+        status 400
+        return { :error => "Subdomain is invalid: #{params[:subdomain]}.#{DOMAIN}" }.to_json
+    end
+    if entry = Entry.first(:subdomain => params[:subdomain])
+        status 409
+        return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }.to_json
+    else
+        status 200
+        return "Domain #{params[:subdomain]}.#{DOMAIN} is available".to_json
+    end
+end
+
 
 post '/:public_key' do
     content_type :json
@@ -156,6 +174,7 @@ get '/ban/:ip_to_ban' do
         status 403
         return "Access denied"
     end
+    content_type :json
     unless params[:ip_to_ban].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
         status 400
         return { :error => "IP is invalid: #{params[:ip_to_ban]}" }.to_json
@@ -170,6 +189,7 @@ get '/unban/:ip_to_ub' do
         status 403
         return "Access denied"
     end
+    content_type :json
     unless params[:ip_to_ub].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
         status 400
         return { :error => "IP is invalid: #{params[:ip_to_ub]}" }.to_json
