@@ -5,9 +5,9 @@ require 'sinatra'
 require 'data_mapper'
 require 'json'
 
-DataMapper.setup(:default, ENV['DATABASE_URL'] || "pgsql://root:yayaya@localhost/dynette")
+DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
 DOMAIN = "yoyoyo.fr"
-ALLOWED_IP = "82.242.206.127"
+ALLOWED_IP = "127.0.0.1"
 
 class Entry
     include DataMapper::Resource
@@ -29,16 +29,43 @@ class Ip
     belongs_to :entry
 end
 
+class Iplog
+    include DataMapper::Resource
+
+    property :ip_addr, String, :key => true
+    property :visited_at, DateTime
+end
+
+class Ipban
+    include DataMapper::Resource
+
+    property :ip_addr, String, :key => true
+end
+
+before do
+    if Ipban.first(:ip_addr => request.ip)
+        halt 410, "Your ip is banned from the service"
+    end
+    if iplog = Iplog.last(:ip_addr => request.ip)
+        if iplog.visited_at.to_time > Time.now - 30
+            halt 410, "Please wait 30sec\n"
+        else
+            iplog.update(:visited_at => Time.now)
+        end
+    else
+        Iplog.create(:ip_addr => request.ip, :visited_at => Time.now)
+    end
+end
+
 get '/' do
     `whoami`
 end
 
-post '/' do
+post '/:public_key' do
     content_type :json
     # Check params
     status 400
     return { :error => "Please indicate a subdomain" }.to_json unless params.has_key?("subdomain")
-    return { :error => "Please indicate a public key" }.to_json unless params.has_key?("public_key")
     return { :error => "Subdomain is invalid: #{params[:subdomain]}.#{DOMAIN}" }.to_json unless params[:subdomain].match /^[a-z0-9-]{3,16}$/
     return { :error => "Key is invalid: #{params[:public_key]}" }.to_json unless params[:public_key].match /^[a-z0-9]{22}==$/i
 
@@ -63,12 +90,13 @@ post '/' do
     end
 end
 
-put '/' do
+put '/:public_key' do
     content_type :json
     # Check params
-    status 400
-    return { :error => "Please indicate a public key" }.to_json unless params.has_key?("public_key")
-    return { :error => "Key is invalid: #{params[:public_key]}" }.to_json unless params[:public_key].match /^[a-z0-9]{22}==$/i
+    unless params[:public_key].match /^[a-z0-9]{22}==$/i
+        status 400
+        return { :error => "Key is invalid: #{params[:public_key]}" }.to_json
+    end
 
     entry = Entry.first(:public_key => params[:public_key])
     unless request.ip == entry.current_ip
@@ -84,6 +112,19 @@ put '/' do
     end
 end
 
+delete '/:public_key' do
+    content_type :json
+    # Check params
+    unless params[:public_key].match /^[a-z0-9]{22}==$/i
+        status 400
+        return { :error => "Key is invalid: #{params[:public_key]}" }.to_json
+    end
+
+    if entry = Entry.first(:public_key => params[:public_key])
+        return "OK" if entry.destroy
+    end
+end
+
 get '/all' do
     unless request.ip == ALLOWED_IP
         status 403
@@ -93,14 +134,50 @@ get '/all' do
     Entry.all.to_json
 end
 
-get '/ips' do
+get '/:public_key/ips' do
     unless request.ip == ALLOWED_IP
         status 403
         return "Access denied"
     end
     content_type :json
-    Entry.first(:public_key => params[:public_key]).ips.ip_addr.to_json
+    unless params[:public_key].match /^[a-z0-9]{22}==$/i
+        status 400
+        return { :error => "Key is invalid: #{params[:public_key]}" }.to_json
+    end
+    ips = []
+    Entry.first(:public_key => params[:public_key]).ips.all.each do |ip|
+        ips.push(ip.ip_addr)
+    end
+    ips.to_json
+end
+
+get '/ban/:ip_to_ban' do
+    unless request.ip == ALLOWED_IP
+        status 403
+        return "Access denied"
+    end
+    unless params[:ip_to_ban].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+        status 400
+        return { :error => "IP is invalid: #{params[:ip_to_ban]}" }.to_json
+    end
+
+    Ipban.create(:ip_addr => params[:ip_to_ban])
+    Ipban.all.to_json
+end
+
+get '/unban/:ip_to_ub' do
+    unless request.ip == ALLOWED_IP
+        status 403
+        return "Access denied"
+    end
+    unless params[:ip_to_ub].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+        status 400
+        return { :error => "IP is invalid: #{params[:ip_to_ub]}" }.to_json
+    end
+
+    Ipban.first(:ip_addr => params[:ip_to_ub]).destroy
+    Ipban.all.to_json
 end
 
 
-DataMapper.auto_upgrade!
+DataMapper.auto_migrate!
