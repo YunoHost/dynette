@@ -35,36 +35,47 @@ end
 post '/' do
     content_type :json
     # Check params
-    unless params[:subdomain].match /^[a-z0-9-]{3,16}$/
-        status 400
-        return { :error => "Subdomain is invalid: #{params[:subdomain]}.#{DOMAIN}" }
-    end
-    unless params[:public_key].match /^[a-z0-9]{22}==$/i
-        status 400
-        return { :error => "Key is invalid: #{params[:public_key]}" }
-    end
-    unless params[:current_ip].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
-        status 400
-        return { :error => "Key is invalid: #{params[:current_ip]}" }
-    end
+    status 400
+    return { :error => "Please indicate a subdomain" } unless params.has_key?("subdomain")
+    return { :error => "Please indicate a public key" } unless params.has_key?("public_key")
+    return { :error => "Subdomain is invalid: #{params[:subdomain]}.#{DOMAIN}" } unless params[:subdomain].match /^[a-z0-9-]{3,16}$/
+    return { :error => "Key is invalid: #{params[:public_key]}" } unless params[:public_key].match /^[a-z0-9]{22}==$/i
 
     # If already exists
-    if entry = Entry.first(:subdomain => params[:subdomain])
-        status 409
-        return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }
-    end
-    if entry = Entry.first(:public_key => params[:public_key])
-        status 409
-        return { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" }
-    end
+    status 409
+    return { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" } if entry = Entry.first(:subdomain => params[:subdomain])
+    return { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" } if entry = Entry.first(:public_key => params[:public_key])
+
+    # Process
     entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip)
     entry.ips << Ip.create(:ip_addr => request.ip)
     if entry.save
         status 201
-        return { :public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip }.to_json
+        return { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
     else
         status 412
         return { :error => "A problem occured during DNS registration" }
+    end
+end
+
+put '/' do
+    content_type :json
+    # Check params
+    status 400
+    return { :error => "Please indicate a public key" } unless params.has_key?("public_key")
+    return { :error => "Key is invalid: #{params[:public_key]}" } unless params[:public_key].match /^[a-z0-9]{22}==$/i
+
+    entry = Entry.first(:public_key => params[:public_key])
+    unless request.ip == entry.current_ip
+        entry.ips << Ip.create(:ip_addr => request.ip)
+    end
+    entry.current_ip = request.ip
+    if entry.save
+        status 201
+        return { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
+    else
+        status 412
+        return { :error => "A problem occured during DNS update" }
     end
 end
 
