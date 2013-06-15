@@ -58,7 +58,7 @@ before do
 end
 
 get '/' do
-    `whoami`
+    "Wanna play the dynette ?"
 end
 
 post '/:public_key' do
