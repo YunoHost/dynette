@@ -7,7 +7,7 @@ require 'json'
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
 DOMAIN = "yoyoyo.fr"
-ALLOWED_IP = "127.0.0.1"
+ALLOWED_IP = "82.196.13.142"
 
 class Entry
     include DataMapper::Resource
@@ -180,4 +180,4 @@ get '/unban/:ip_to_ub' do
 end
 
 
-DataMapper.auto_migrate!
+DataMapper.auto_upgrade!
