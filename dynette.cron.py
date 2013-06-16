@@ -12,17 +12,16 @@ for url in urls:
     domains = json.loads(str(urlopen(url +'/domains').read()))
 
     for domain in domains:
-        result = json.loads(str(urlopen(url +'/all').read()))
-
+        result = json.loads(str(urlopen(url +'/all/'+ domain).read()))
         lines.extend([
                 'zone "'+ domain +'" {',
                 '   type master;',
-                '   file "/var/named/data/yoyoyo.fr.db"; ',
+                '   file "/var/named/data/'+ domain +'.db"; ',
                 '   update-policy {',
         ])
 
         for entry in result:
-            fqdn = entry['subdomain'] +'.'+ domain +'.'
+            fqdn = entry['subdomain'] +'.'
             lines.extend([
                 '       grant '+ fqdn +' name '+ fqdn +' A TXT;',
                 '       grant '+ fqdn +' name pubsub.'+ fqdn +' A;',
@@ -38,7 +37,7 @@ for url in urls:
         ])
 
         for entry in result:
-            fqdn = entry['subdomain'] +'.'+ domain +'.'
+            fqdn = entry['subdomain'] +'.'
             lines.extend([
                 'key '+ fqdn +' {',
                 '       algorithm hmac-md5;',

@@ -161,6 +161,18 @@ get '/all' do
     Entry.all.to_json
 end
 
+get '/all/:domain' do
+    unless request.ip == ALLOWED_IP
+        status 403
+        return "Access denied"
+    end
+    result = []
+    Entry.all.each do |entry|
+        result.push(entry) if params[:domain] == entry.subdomain.gsub(entry.subdomain.split('.')[0]+'.', '')
+    end
+    halt 200, result.to_json
+end
+
 get '/ips/:public_key' do
     unless request.ip == ALLOWED_IP
         status 403
