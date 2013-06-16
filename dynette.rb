@@ -7,8 +7,8 @@ require 'json'
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
 DOMAINS = ["yoyoyo.fr", "yayaya.fr"]
-ALLOWED_IP = "82.196.13.142"
-#ALLOWED_IP = "127.0.0.1"
+#ALLOWED_IP = "82.196.13.142"
+ALLOWED_IP = "127.0.0.1"
 
 class Entry
     include DataMapper::Resource
@@ -17,6 +17,7 @@ class Entry
     property :public_key, String
     property :subdomain, String
     property :current_ip, String
+    property :created_at, DateTime
 
     has n, :ips
 end
@@ -43,38 +44,49 @@ class Ipban
     property :ip_addr, String, :key => true
 end
 
+not_found do
+    content_type :json
+    halt 404, { :error => "Not found" }.to_json
+end
+
 before do
     if Ipban.first(:ip_addr => request.ip)
         halt 410, "Your ip is banned from the service"
     end
-    pass if %w[domains test all ban unban].include? request.path_info.split('/')[1]
-    if iplog = Iplog.last(:ip_addr => request.ip)
-        if iplog.visited_at.to_time > Time.now - 30
-            halt 410, "Please wait 30sec\n"
+    unless %w[domains test all ban unban].include? request.path_info.split('/')[1]
+        if iplog = Iplog.last(:ip_addr => request.ip)
+            if iplog.visited_at.to_time > Time.now - 30
+                halt 410, "Please wait 30sec\n"
+            else
+                iplog.update(:visited_at => Time.now)
+            end
         else
-            iplog.update(:visited_at => Time.now)
+            Iplog.create(:ip_addr => request.ip, :visited_at => Time.now)
         end
-    else
-        Iplog.create(:ip_addr => request.ip, :visited_at => Time.now)
     end
     content_type :json
+end
 
-    # Check params
-    if params.has_key?("public_key")
-        unless params[:public_key].match /^[a-z0-9]{22}==$/i
-            halt 400, { :error => "Key is invalid: #{params[:public_key]}" }.to_json
+# Check params
+['/test/:subdomain', '/key/:public_key', '/ips/:public_key', '/ban/:ip', '/unban/:ip' ].each do |path|
+    before path do
+        if params.has_key?("public_key")
+            unless params[:public_key].match /^[a-z0-9]{22}==$/i
+                halt 400, { :error => "Key is invalid: #{params[:public_key]}" }.to_json
+            end
         end
-    end
-    if params.has_key?("subdomain")
-        unless params[:subdomain].match /^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$/
-            halt 400, { :error => "Subdomain is invalid: #{params[:subdomain]}" }.to_json
+        if params.has_key?("subdomain")
+            unless params[:subdomain].match /^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$/
+                halt 400, { :error => "Subdomain is invalid: #{params[:subdomain]}" }.to_json
+            end
+            unless DOMAINS.include? params[:subdomain].gsub(params[:subdomain].split('.')[0]+'.', '')
+                halt 400, { :error => "Subdomain #{params[:subdomain]} is not part of available domains: #{DOMAINS.join(', ')}" }.to_json
+            end
         end
-        DOMAIN = params[:subdomain].gsub(params[:subdomain].split('.')[0]+'.', '')
-        params[:subdomain] = params[:subdomain].split('.')[0]
-    end
-    if params.has_key?("ip")
-        unless params[:ip].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
-            halt 400, { :error => "IP is invalid: #{params[:ip]}" }.to_json
+        if params.has_key?("ip")
+            unless params[:ip].match /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+                halt 400, { :error => "IP is invalid: #{params[:ip]}" }.to_json
+            end
         end
     end
 end
@@ -89,27 +101,27 @@ end
 
 get '/test/:subdomain' do
     if entry = Entry.first(:subdomain => params[:subdomain])
-        halt 409, { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }.to_json
+        halt 409, { :error => "Subdomain already taken: #{entry.subdomain}" }.to_json
     else
-        "Domain #{params[:subdomain]}.#{DOMAIN} is available".to_json
+        halt 200, "Domain #{params[:subdomain]} is available".to_json
     end
 end
 
 
-post '/:public_key' do
+post '/key/:public_key' do
     # Check params
     halt 400, { :error => "Please indicate a subdomain" }.to_json unless params.has_key?("subdomain")
 
     # If already exists
     if entry = Entry.first(:subdomain => params[:subdomain])
-        halt 409, { :error => "Subdomain already taken: #{entry.subdomain}.#{DOMAIN}" }.to_json
+        halt 409, { :error => "Subdomain already taken: #{entry.subdomain}" }.to_json
     end
     if entry = Entry.first(:public_key => params[:public_key])
-        halt 409, { :error => "Key already exists for domain #{entry.subdomain}.#{DOMAIN}" }.to_json
+        halt 409, { :error => "Key already exists for domain #{entry.subdomain}" }.to_json
     end
 
     # Process
-    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip)
+    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now)
     entry.ips << Ip.create(:ip_addr => request.ip)
     if entry.save
         halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
@@ -118,7 +130,7 @@ post '/:public_key' do
     end
 end
 
-put '/:public_key' do
+put '/key/:public_key' do
     entry = Entry.first(:public_key => params[:public_key])
     unless request.ip == entry.current_ip
         entry.ips << Ip.create(:ip_addr => request.ip)
@@ -131,7 +143,7 @@ put '/:public_key' do
     end
 end
 
-delete '/:public_key' do
+delete '/key/:public_key' do
     if entry = Entry.first(:public_key => params[:public_key])
         if entry.destroy
             halt 200, "OK".to_json
@@ -149,7 +161,7 @@ get '/all' do
     Entry.all.to_json
 end
 
-get '/:public_key/ips' do
+get '/ips/:public_key' do
     unless request.ip == ALLOWED_IP
         status 403
         return "Access denied"
@@ -180,4 +192,4 @@ get '/unban/:ip' do
 end
 
 
-DataMapper.auto_upgrade!
+DataMapper.auto_migrate!
