@@ -13,6 +13,26 @@ for url in urls:
 
     for domain in domains:
         result = json.loads(str(urlopen(url +'/all/'+ domain).read()))
+	if not os.path.exists('/var/named/data/'+ domain +'.db'):
+            db_lines = [
+                '$ORIGIN .',
+                '$TTL 10 ; 10 seconds',
+                domain+'.   IN SOA  dynhost.yunohost.org hostmaster.yunohost.org. (',
+                '                                18         ; serial',
+                '                                10800      ; refresh (3 hours)',
+                '                                3600       ; retry (1 hour)',
+                '                                604800     ; expire (1 week)',
+                '                                10         ; minimum (10 seconds)',
+                '                                )',
+                '$TTL 3600       ; 1 hour',
+                '                        NS      dynhost.yunohost.org.',
+                '                        NS      hostmaster.yunohost.org.',
+                '',
+                '$ORIGIN '+ domain +'.',
+            ]
+            with open('/var/named/data/'+ domain +'.db', 'w') as zone:
+                for line in db_lines:
+                    zone.write(line + '\n')
         lines.extend([
                 'zone "'+ domain +'" {',
                 '   type master;',
@@ -52,6 +72,7 @@ with open('/etc/bind/named.conf.local', 'w') as zone:
     for line in lines:
         zone.write(line + '\n')
 
+os.system('chown -R bind:bind /var/named /etc/bind/named.conf.local')
 if os.system('rndc reload') == 0:
     exit(0)
 else:
