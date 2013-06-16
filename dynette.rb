@@ -6,7 +6,7 @@ require 'data_mapper'
 require 'json'
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
-DOMAINS = ["yoyoyo.fr", "yayaya.fr"]
+DOMAINS = ["nohost.me"]
 ALLOWED_IP = "82.196.13.142"
 #ALLOWED_IP = "127.0.0.1"
 
