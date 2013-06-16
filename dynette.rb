@@ -192,4 +192,4 @@ get '/unban/:ip' do
 end
 
 
-DataMapper.auto_migrate!
+DataMapper.auto_upgrade!
