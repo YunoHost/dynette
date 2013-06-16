@@ -23,7 +23,7 @@ for url in urls:
         for entry in result:
             fqdn = entry['subdomain'] +'.'
             lines.extend([
-                '       grant '+ fqdn +' name '+ fqdn +' A TXT;',
+                '       grant '+ fqdn +' name '+ fqdn +' A TXT MX;',
                 '       grant '+ fqdn +' name pubsub.'+ fqdn +' A;',
                 '       grant '+ fqdn +' name muc.'+ fqdn +' A;',
                 '       grant '+ fqdn +' name vjud.'+ fqdn +' A;',
