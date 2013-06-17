@@ -15,7 +15,7 @@ allowed_operations = {
             '.'                  : ['A', 'TXT', 'MX'],
             'pubsub.'            : ['A'],
             'muc.'               : ['A'],
-            'vjud'               : ['A'],
+            'vjud.'              : ['A'],
             '_xmpp-client._tcp.' : ['SRV'],
             '_xmpp-server._tcp.' : ['SRV']
 }
