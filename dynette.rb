@@ -7,8 +7,7 @@ require 'json'
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
 DOMAINS = ["nohost.me", "noho.st"]
-ALLOWED_IP = "82.196.13.142"
-#ALLOWED_IP = "127.0.0.1"
+ALLOWED_IP = ["82.196.13.142", "192.241.138.212", "127.0.0.1"]
 
 class Entry
     include DataMapper::Resource
@@ -154,7 +153,7 @@ delete '/key/:public_key' do
 end
 
 get '/all' do
-    unless request.ip == ALLOWED_IP
+    unless ALLOWED_IP.include? request.ip
         status 403
         return "Access denied"
     end
@@ -162,7 +161,7 @@ get '/all' do
 end
 
 get '/all/:domain' do
-    unless request.ip == ALLOWED_IP
+    unless ALLOWED_IP.include? request.ip
         status 403
         return "Access denied"
     end
@@ -174,7 +173,7 @@ get '/all/:domain' do
 end
 
 get '/ips/:public_key' do
-    unless request.ip == ALLOWED_IP
+    unless ALLOWED_IP.include? request.ip
         status 403
         return "Access denied"
     end
@@ -186,7 +185,7 @@ get '/ips/:public_key' do
 end
 
 get '/ban/:ip' do
-    unless request.ip == ALLOWED_IP
+    unless ALLOWED_IP.include? request.ip
         status 403
         return "Access denied"
     end
@@ -195,7 +194,7 @@ get '/ban/:ip' do
 end
 
 get '/unban/:ip' do
-    unless request.ip == ALLOWED_IP
+    unless ALLOWED_IP.include? request.ip
         status 403
         return "Access denied"
     end
