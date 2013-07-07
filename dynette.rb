@@ -70,7 +70,8 @@ end
 ['/test/:subdomain', '/key/:public_key', '/ips/:public_key', '/ban/:ip', '/unban/:ip' ].each do |path|
     before path do
         if params.has_key?("public_key")
-            unless params[:public_key].match /^[a-z0-9]{22}==$/i
+            params[:public_key] = Base64.decode64(params[:public_key])
+            unless params[:public_key].length = 24
                 halt 400, { :error => "Key is invalid: #{params[:public_key]}" }.to_json
             end
         end
