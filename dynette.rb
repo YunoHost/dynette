@@ -4,6 +4,7 @@ require 'rubygems'
 require 'sinatra'
 require 'data_mapper'
 require 'json'
+require 'base64'
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://postgres:yayaya@localhost/dynette")
 DOMAINS = ["nohost.me", "noho.st"]
@@ -70,9 +71,9 @@ end
 ['/test/:subdomain', '/key/:public_key', '/ips/:public_key', '/ban/:ip', '/unban/:ip' ].each do |path|
     before path do
         if params.has_key?("public_key")
-            params[:public_key] = Base64.decode64(params[:public_key])
-            unless params[:public_key].length = 24
-                halt 400, { :error => "Key is invalid: #{params[:public_key]}" }.to_json
+            public_key = Base64.decode64(params[:public_key])
+            unless public_key.length = 24
+                halt 400, { :error => "Key is invalid: #{public_key}" }.to_json
             end
         end
         if params.has_key?("subdomain")
