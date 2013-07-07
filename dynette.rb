@@ -72,7 +72,7 @@ end
     before path do
         if params.has_key?("public_key")
             public_key = Base64.decode64(params[:public_key])
-            unless public_key.length = 24
+            unless public_key.length == 24
                 halt 400, { :error => "Key is invalid: #{public_key}" }.to_json
             end
         end
