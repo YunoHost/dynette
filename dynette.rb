@@ -72,7 +72,6 @@ end
     before path do
         if params.has_key?("public_key")
             public_key = Base64.decode64(params[:public_key].encode('ascii-8bit'))
-            puts public_key
             unless public_key.length == 24
                 halt 400, { :error => "Key is invalid: #{public_key.to_s.encode('UTF-8', {:invalid => :replace, :undef => :replace, :replace => '?'})}" }.to_json
             end
@@ -111,7 +110,7 @@ end
 
 
 post '/key/:public_key' do
-    params[:public_key] = Base64.decode64(params[:public_key])
+    params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     # Check params
     halt 400, { :error => "Please indicate a subdomain" }.to_json unless params.has_key?("subdomain")
 
@@ -134,7 +133,7 @@ post '/key/:public_key' do
 end
 
 put '/key/:public_key' do
-    params[:public_key] = Base64.decode64(params[:public_key])
+    params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     entry = Entry.first(:public_key => params[:public_key])
     unless request.ip == entry.current_ip
         entry.ips << Ip.create(:ip_addr => request.ip)
@@ -148,7 +147,7 @@ put '/key/:public_key' do
 end
 
 delete '/key/:public_key' do
-    params[:public_key] = Base64.decode64(params[:public_key])
+    params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     if entry = Entry.first(:public_key => params[:public_key])
         if entry.destroy
             halt 200, "OK".to_json
@@ -179,7 +178,7 @@ get '/all/:domain' do
 end
 
 get '/ips/:public_key' do
-    params[:public_key] = Base64.decode64(params[:public_key])
+    params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     unless ALLOWED_IP.include? request.ip
         status 403
         return "Access denied"
