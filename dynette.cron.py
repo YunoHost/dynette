@@ -84,11 +84,11 @@ with open(conf_file, 'w') as zone:
         zone.write(line + '\n')
 
 os.system('chown -R bind:bind '+ zone_dir +' '+ conf_file)
-if os.system('rndc reload') == 0:
+if os.system('/usr/sbin/rndc reload') == 0:
     exit(0)
 else:
     os.system('cp '+ conf_file +' '+ conf_file +'.bad')
     os.system('cp '+ conf_file +'.back '+ conf_file)
-    os.system('rndc reload')
+    os.system('/usr/sbin/rndc reload')
     print("An error occured ! Please check daemon.log and your conf.bad")
     exit(1)
