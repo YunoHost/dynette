@@ -3,7 +3,7 @@
 ### Configuration ###
 
 conf_file = '/etc/bind/named.conf.local'    # Include this filename in '/etc/bind/named.conf'
-zone_dir  = '/var/named/data/'              # Do not forget the trailing '/'
+zone_dir  = '/var/lib/bind/'                # Do not forget the trailing '/'
 subs_urls = ['http://dyndns.yunohost.org']  # 127.0.0.1 if you install subscribe server locally
 ns1       = 'dynhost.yunohost.org'          # Name servers
 ns2       = 'hostmaster.yunohost.org'
@@ -75,7 +75,6 @@ for url in subs_urls:
                 '       secret "'+ entry['public_key'] +'";',
                 '};',
             ])
-
 
 os.system('cp '+ conf_file +' '+ conf_file +'.back')
 
