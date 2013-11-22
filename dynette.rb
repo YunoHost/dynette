@@ -148,6 +148,10 @@ put '/key/:public_key' do
 end
 
 delete '/key/:public_key' do
+    unless ALLOWED_IP.include? request.ip
+        status 403
+        return "Access denied"
+    end
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     if entry = Entry.first(:public_key => params[:public_key])
         if entry.destroy
