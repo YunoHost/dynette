@@ -78,7 +78,7 @@ end
             end
         end
         if params.has_key?("subdomain")
-            unless params[:subdomain].match /^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$/
+            unless params[:subdomain].match /^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$/
                 halt 400, { :error => "Subdomain is invalid: #{params[:subdomain]}" }.to_json
             end
             unless DOMAINS.include? params[:subdomain].gsub(params[:subdomain].split('.')[0]+'.', '')
@@ -148,8 +148,28 @@ put '/key/:public_key' do
 end
 
 delete '/key/:public_key' do
+    unless ALLOWED_IP.include? request.ip
+        status 403
+        return "Access denied"
+    end
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     if entry = Entry.first(:public_key => params[:public_key])
+        Ip.first(:entry_id => entry.id).destroy
+        if entry.destroy
+            halt 200, "OK".to_json
+        else
+            halt 412, { :error => "A problem occured during DNS deletion" }.to_json
+        end
+    end
+end
+
+delete '/domains/:subdomain' do
+    unless ALLOWED_IP.include? request.ip
+        status 403
+        return "Access denied"
+    end
+    if entry = Entry.first(:subdomain => params[:subdomain])
+        Ip.first(:entry_id => entry.id).destroy
         if entry.destroy
             halt 200, "OK".to_json
         else
@@ -209,5 +229,5 @@ get '/unban/:ip' do
     Ipban.all.to_json
 end
 
-
-DataMapper.auto_migrate!
+#DataMapper.auto_migrate! # Destroy db content
+DataMapper.auto_upgrade!
