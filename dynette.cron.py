@@ -9,10 +9,10 @@ ns1       = 'dynhost.yunohost.org'          # Name servers
 ns2       = 'hostmaster.yunohost.org'
 
 allowed_operations = {
-            '.'                  : ['A', 'TXT', 'MX'],
-            'pubsub.'            : ['A'],
-            'muc.'               : ['A'],
-            'vjud.'              : ['A'],
+            '.'                  : ['A', 'AAAA', 'TXT', 'MX'],
+            'pubsub.'            : ['A', 'AAAA'],
+            'muc.'               : ['A', 'AAAA'],
+            'vjud.'              : ['A', 'AAAA'],
             '_xmpp-client._tcp.' : ['SRV'],
             '_xmpp-server._tcp.' : ['SRV']
 }
