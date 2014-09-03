@@ -98,6 +98,7 @@ get '/' do
 end
 
 get '/domains' do
+    headers['Access-Control-Allow-Origin'] = '*'
     DOMAINS.to_json
 end
 
