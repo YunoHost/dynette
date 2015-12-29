@@ -103,6 +103,7 @@ get '/domains' do
 end
 
 get '/test/:subdomain' do
+    headers['Access-Control-Allow-Origin'] = '*'
     if entry = Entry.first(:subdomain => params[:subdomain])
         halt 409, { :error => "Subdomain already taken: #{entry.subdomain}" }.to_json
     else
