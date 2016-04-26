@@ -1,2 +1,2 @@
 require './dynette.rb'
-run Sinatra::Application.run!
+run Sinatra::Application
