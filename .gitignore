@@ -1,5 +1,8 @@
 *.swp
 
+# Master Key
+master.key
+
 # Thin server files
 log/*
 tmp/*
