@@ -6,10 +6,20 @@ require 'data_mapper'
 require 'json'
 require 'base64'
 
+######################
+###  Configuration ###
+######################
+
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://dynette:myPassword@localhost/dynette")
 DOMAINS = ["nohost.me", "noho.st"]
 ALLOWED_IP = ["127.0.0.1"]
 
+
+###############
+### Classes ###
+###############
+
+# Dynette Entry class
 class Entry
     include DataMapper::Resource
 
@@ -22,6 +32,7 @@ class Entry
     has n, :ips
 end
 
+# IP class
 class Ip
     include DataMapper::Resource
 
@@ -31,6 +42,7 @@ class Ip
     belongs_to :entry
 end
 
+# IP Log class
 class Iplog
     include DataMapper::Resource
 
@@ -38,16 +50,28 @@ class Iplog
     property :visited_at, DateTime
 end
 
+# IP ban class
 class Ipban
     include DataMapper::Resource
 
     property :ip_addr, String, :key => true
 end
 
+
+################
+### Handlers ###
+################
+
+# 404 Error handler
 not_found do
     content_type :json
     halt 404, { :error => "Not found" }.to_json
 end
+
+
+##############
+### Routes ###
+##############
 
 # Common tasks and settings for every route
 before do
@@ -100,15 +124,18 @@ end
     end
 end
 
+# Main page, return some basic text
 get '/' do
     content_type 'text/html'
     "Wanna play the dynette ?"
 end
 
+# Get availables DynDNS domains
 get '/domains' do
     DOMAINS.to_json
 end
 
+# Check for sub-domain vailability
 get '/test/:subdomain' do
     if entry = Entry.first(:subdomain => params[:subdomain])
         halt 409, { :error => "Subdomain already taken: #{entry.subdomain}" }.to_json
@@ -117,7 +144,7 @@ get '/test/:subdomain' do
     end
 end
 
-
+# Register a sub-domain
 post '/key/:public_key' do
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     # Check params
@@ -141,6 +168,7 @@ post '/key/:public_key' do
     end
 end
 
+# Update a sub-domain
 put '/key/:public_key' do
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     entry = Entry.first(:public_key => params[:public_key])
@@ -155,6 +183,7 @@ put '/key/:public_key' do
     end
 end
 
+# Delete a sub-domain from key
 delete '/key/:public_key' do
     unless ALLOWED_IP.include? request.ip
         halt 403, { :error => "Access denied"}.to_json
@@ -170,6 +199,7 @@ delete '/key/:public_key' do
     end
 end
 
+# Delete a sub-domain
 delete '/domains/:subdomain' do
     unless ALLOWED_IP.include? request.ip
         halt 403, { :error => "Access denied"}.to_json
@@ -184,6 +214,7 @@ delete '/domains/:subdomain' do
     end
 end
 
+# Get all registered sub-domains
 get '/all' do
     unless ALLOWED_IP.include? request.ip
         halt 403, { :error => "Access denied"}.to_json
@@ -191,6 +222,7 @@ get '/all' do
     Entry.all.to_json
 end
 
+# Get all registered sub-domains for a specific DynDNS domain
 get '/all/:domain' do
     unless ALLOWED_IP.include? request.ip
         halt 403, { :error => "Access denied"}.to_json
@@ -202,6 +234,7 @@ get '/all/:domain' do
     halt 200, result.to_json
 end
 
+# ?
 get '/ips/:public_key' do
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     unless ALLOWED_IP.include? request.ip
@@ -214,6 +247,7 @@ get '/ips/:public_key' do
     ips.to_json
 end
 
+# Ban an IP address for 30 seconds
 get '/ban/:ip' do
     unless ALLOWED_IP.include? request.ip
         halt 403, { :error => "Access denied"}.to_json
@@ -222,6 +256,7 @@ get '/ban/:ip' do
     Ipban.all.to_json
 end
 
+# Unban an IP address
 get '/unban/:ip' do
     unless ALLOWED_IP.include? request.ip
         halt 403, { :error => "Access denied"}.to_json
@@ -229,6 +264,7 @@ get '/unban/:ip' do
     Ipban.first(:ip_addr => params[:ip]).destroy
     Ipban.all.to_json
 end
+
 
 #DataMapper.auto_migrate! # Destroy db content
 DataMapper.auto_upgrade!
