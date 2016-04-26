@@ -5,8 +5,9 @@
 conf_file = '/etc/bind/named.conf.local'    # Include this filename in '/etc/bind/named.conf'
 zone_dir  = '/var/lib/bind/'                # Do not forget the trailing '/'
 subs_urls = ['http://dyndns.yunohost.org']  # 127.0.0.1 if you install subscribe server locally
-ns1       = 'dynhost.yunohost.org'          # Name servers
-ns2       = 'hostmaster.yunohost.org'
+ns0       = 'ns0.yunohost.org'          # Name servers
+ns1       = 'ns1.yunohost.org'
+rname     = 'hostmaster@yunohost.org' # Responsible person (https://tools.ietf.org/html/rfc1035#section-3.3.13)
 
 allowed_operations = {
             '.'                  : ['A', 'AAAA', 'TXT', 'MX'],
@@ -35,7 +36,7 @@ for url in subs_urls:
             db_lines = [
                 '$ORIGIN .',
                 '$TTL 10 ; 10 seconds',
-                domain+'.   IN SOA  '+ ns1 +'. '+ ns2 +'. (',
+                domain+'.   IN SOA  '+ ns0 +'. '+ rname +'. (',
                 '                                18         ; serial',
                 '                                10800      ; refresh (3 hours)',
                 '                                3600       ; retry (1 hour)',
@@ -43,8 +44,8 @@ for url in subs_urls:
                 '                                10         ; minimum (10 seconds)',
                 '                                )',
                 '$TTL 3600       ; 1 hour',
+                '                        NS      '+ ns0 +'.',
                 '                        NS      '+ ns1 +'.',
-                '                        NS      '+ ns2 +'.',
                 '',
                 '$ORIGIN '+ domain +'.',
             ]
