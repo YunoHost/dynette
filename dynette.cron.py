@@ -4,7 +4,7 @@
 
 conf_file = '/etc/bind/named.conf.local'    # Include this filename in '/etc/bind/named.conf'
 zone_dir  = '/var/lib/bind/'                # Do not forget the trailing '/'
-subs_urls = ['http://dyndns.yunohost.org']  # 127.0.0.1 if you install subscribe server locally
+subs_urls = ['https://dyndns.yunohost.org']  # 127.0.0.1 if you install subscribe server locally
 ns0       = 'ns0.yunohost.org'          # Name servers
 ns1       = 'ns1.yunohost.org'
 rname     = 'hostmaster@yunohost.org' # Responsible person (https://tools.ietf.org/html/rfc1035#section-3.3.13)
