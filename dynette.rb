@@ -49,7 +49,9 @@ not_found do
     halt 404, { :error => "Not found" }.to_json
 end
 
+# Common tasks and settings for every route
 before do
+    # Ban IP on flood
     if Ipban.first(:ip_addr => request.ip)
         halt 410, "Your ip is banned from the service"
     end
@@ -64,7 +66,12 @@ before do
             Iplog.create(:ip_addr => request.ip, :visited_at => Time.now)
         end
     end
+
+    # Always return json
     content_type :json
+
+    # Allow CORS
+    headers['Access-Control-Allow-Origin'] = '*'
 end
 
 # Check params
@@ -97,12 +104,10 @@ get '/' do
 end
 
 get '/domains' do
-    headers['Access-Control-Allow-Origin'] = '*'
     DOMAINS.to_json
 end
 
 get '/test/:subdomain' do
-    headers['Access-Control-Allow-Origin'] = '*'
     if entry = Entry.first(:subdomain => params[:subdomain])
         halt 409, { :error => "Subdomain already taken: #{entry.subdomain}" }.to_json
     else
