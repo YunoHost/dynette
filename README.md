@@ -100,9 +100,14 @@ apt-get install bind9 python
 
 Edit dynette.cron.py and change settings:
 ```
-subs_urls = ['http://dyndns.yunohost.org']  
-ns1       = 'dynhost.yunohost.org'          
-ns2       = 'hostmaster.yunohost.org'
+subs_urls = ['https://dyndns.yunohost.org']
+ns0       = 'ns0.yunohost.org'
+ns1       = 'ns1.yunohost.org'
+```
+
+Create and edit master.key file is Dynette directory
+```
+echo "MyMasterKey" > master.key
 ```
 
 Create dynette log file
@@ -119,4 +124,6 @@ Enable cronjob for dynette (crontab -e)
 Troobleshooting
 ---------------
 
-If you run into troubles running the DNS server, try to check permissions on /var/lib/bind and check if bind listens on 0.0.0.0 (in /etc/bind/bind.conf.options)
+If you run into troubles running the DNS server, try to check permissions on
+`/var/lib/bind` and check if bind listens on 0.0.0.0 in
+`/etc/bind/bind.conf.options`.
