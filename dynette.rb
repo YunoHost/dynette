@@ -51,14 +51,20 @@ end
 
 # Common tasks and settings for every route
 before do
+    # Always return json
+    content_type :json
+
+    # Allow CORS
+    headers['Access-Control-Allow-Origin'] = '*'
+
     # Ban IP on flood
     if Ipban.first(:ip_addr => request.ip)
-        halt 410, "Your ip is banned from the service"
+        halt 410, { :error => "Your ip is banned from the service" }.to_json
     end
     unless %w[domains test all ban unban].include? request.path_info.split('/')[1]
         if iplog = Iplog.last(:ip_addr => request.ip)
             if iplog.visited_at.to_time > Time.now - 30
-                halt 410, "Please wait 30sec\n"
+                halt 410, { :error => "Please wait 30sec" }.to_json
             else
                 iplog.update(:visited_at => Time.now)
             end
@@ -67,11 +73,6 @@ before do
         end
     end
 
-    # Always return json
-    content_type :json
-
-    # Allow CORS
-    headers['Access-Control-Allow-Origin'] = '*'
 end
 
 # Check params
@@ -100,6 +101,7 @@ end
 end
 
 get '/' do
+    content_type 'text/html'
     "Wanna play the dynette ?"
 end
 
@@ -155,8 +157,7 @@ end
 
 delete '/key/:public_key' do
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     if entry = Entry.first(:public_key => params[:public_key])
@@ -171,8 +172,7 @@ end
 
 delete '/domains/:subdomain' do
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     if entry = Entry.first(:subdomain => params[:subdomain])
         Ip.first(:entry_id => entry.id).destroy
@@ -186,16 +186,14 @@ end
 
 get '/all' do
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     Entry.all.to_json
 end
 
 get '/all/:domain' do
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     result = []
     Entry.all.each do |entry|
@@ -207,8 +205,7 @@ end
 get '/ips/:public_key' do
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     ips = []
     Entry.first(:public_key => params[:public_key]).ips.all.each do |ip|
@@ -219,8 +216,7 @@ end
 
 get '/ban/:ip' do
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     Ipban.create(:ip_addr => params[:ip])
     Ipban.all.to_json
@@ -228,8 +224,7 @@ end
 
 get '/unban/:ip' do
     unless ALLOWED_IP.include? request.ip
-        status 403
-        return "Access denied"
+        halt 403, { :error => "Access denied"}.to_json
     end
     Ipban.first(:ip_addr => params[:ip]).destroy
     Ipban.all.to_json
