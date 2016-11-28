@@ -12,7 +12,7 @@ git clone https://github.com/YunoHost/dynette
 Web subscribe server deployment
 -------------------------------
 ```
-apt-get install postgresql ruby thin libpq-dev bundler apache2
+apt-get install postgresql postgresql-server-dev-9.4 ruby thin libpq-dev bundler apache2
 ```
 
 In dynette repository:
