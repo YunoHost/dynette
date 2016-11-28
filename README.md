@@ -11,21 +11,54 @@ git clone https://github.com/YunoHost/dynette
 
 Web subscribe server deployment
 -------------------------------
+
+Install required stuff
 ```
-apt-get install postgresql postgresql-server-dev-9.4 ruby thin libpq-dev bundler apache2
+$ apt-get install postgresql postgresql-server-dev-9.4 ruby thin libpq-dev bundler apache2 bind9 python
 ```
 
-In dynette repository:
+Prepare user dynette
 ```
-bundle install
-```
-
-Thin configuration:
-```
-thin config -C /etc/thin1.9.1/dynette.yml -c /path/to/dynette/ --servers 3 -p 5000 -e production
+$ useradd dynette
+$ passwd dynette
+$ mkdir /home/dynette
+$ chown -R dynette:dynette /home/dynette
 ```
 
-Apache configuration:
+Prepare PostgreSQL database
+```
+$ su - postgres
+$ psql template1
+template1=# CREATE USER dynette WITH PASSWORD 'verySecurePassword';
+template1=# CREATE DATABASE dynette;
+template1=# GRANT ALL PRIVILEGES ON DATABASE dynette to dynette;
+template1=# \q
+```
+
+Install dynette
+```
+$ cd /home/dynette
+$ git clone https://github.com/YunoHost/dynette
+$ cd dynette
+$ bundle install
+```
+
+Edit dynette.rb, change PostgreSQL password and domains handled, line 11-12:
+```
+DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://dynette:myPassword@localhost/dynette")
+DOMAINS = ["nohost.me", "noho.st"]
+```
+
+Configure and launch thin
+```
+thin config -C /etc/thin2.1/dynette.yml -c /home/dynette/dynette/ --servers 3 -p 5000 -e production
+service thin restart
+```
+
+
+Apache configuration
+--------------------
+
 ```
 vim /etc/apache2/sites-available/dynette
 ```
@@ -63,43 +96,21 @@ Paste & change server name in below configuration:
 </VirtualHost>
 ```
 
-PostgreSQL configuration:
-```
-# adduser dynette
-# passwd dynette
-# su - postgres
-$ psql template1
-template1=# CREATE USER dynette WITH PASSWORD 'myPassword';
-template1=# CREATE DATABASE dynette;
-template1=# GRANT ALL PRIVILEGES ON DATABASE dynette to dynette;
-template1=# \q
-```
-
-Edit dynette.rb, change PostgreSQL password and domains handled, line 11-12:
-```
-DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://dynette:myPassword@localhost/dynette")
-DOMAINS = ["nohost.me", "noho.st"]
-```
-
 Enable apache2 sites & modules:
 ```
 a2enmod proxy
 a2enmod rewrite
 a2ensite dynette
-service thin start
 service apache2 restart
 ```
 
 
-DNS configuration
------------------
-
-```
-apt-get install bind9 python
-```
+Cron job configuration
+----------------------
 
 Edit dynette.cron.py and change settings:
 ```
+# If you want to simply do test in local, use "http://127.0.0.1:5000/"
 subs_urls = ['https://dyndns.yunohost.org']
 ns0       = 'ns0.yunohost.org'
 ns1       = 'ns1.yunohost.org'
@@ -119,7 +130,10 @@ Enable cronjob for dynette (crontab -e)
 ```
 * * * * * /path/to/dynette/dynette.cron.py >> /var/log/dynette.log 2>&1
 ```
+Test it's working
+-----------------
 
+`wget -q -O - http://127.0.0.1:5000/test/someDomain.nohost.me`
 
 Troobleshooting
 ---------------
