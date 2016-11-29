@@ -5,6 +5,7 @@ require 'sinatra'
 require 'data_mapper'
 require 'json'
 require 'base64'
+require 'bcrypt'
 
 ######################
 ###  Configuration ###
@@ -22,12 +23,14 @@ ALLOWED_IP = ["127.0.0.1"]
 # Dynette Entry class
 class Entry
     include DataMapper::Resource
+    include BCrypt
 
     property :id, Serial
     property :public_key, String
     property :subdomain, String
     property :current_ip, String
     property :created_at, DateTime
+    property :recovery_password, Text
 
     has n, :ips
 end
@@ -130,6 +133,14 @@ get '/' do
     "Wanna play the dynette ?"
 end
 
+# Delete interface for user with recovery password
+get '/delete' do
+    f = File.open("delete.html", "r")
+
+    content_type 'text/html'
+    f.read
+end
+
 # Get availables DynDNS domains
 get '/domains' do
     DOMAINS.to_json
@@ -158,9 +169,17 @@ post '/key/:public_key' do
         halt 409, { :error => "Key already exists for domain #{entry.subdomain}" }.to_json
     end
 
+    # If user provided a recovery password, hash and salt it before storing it
+    if params.has_key?("recovery_password")
+        recovery_password = BCrypt::Password.create(params[:recovery_password])
+    else
+        recovery_password = ""
+    end
+
     # Process
-    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now)
+    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now, :recovery_password => recovery_password)
     entry.ips << Ip.create(:ip_addr => request.ip)
+
     if entry.save
         halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
     else
@@ -201,10 +220,21 @@ end
 
 # Delete a sub-domain
 delete '/domains/:subdomain' do
-    unless ALLOWED_IP.include? request.ip
+    unless (ALLOWED_IP.include? request.ip) || (params.has_key?("recovery_password"))
         halt 403, { :error => "Access denied"}.to_json
     end
     if entry = Entry.first(:subdomain => params[:subdomain])
+
+        # For non-admin
+        unless (ALLOWED_IP.include? request.ip)
+            # If no recovery password was provided when registering domain,
+            # or if wrong password is provided, deny access
+            if (entry.recovery_password == "") || (BCrypt::Password.new(entry.recovery_password) != params[:recovery_password])
+                halt 403, { :error => "Access denied" }.to_json
+            end
+        end
+
+
         Ip.first(:entry_id => entry.id).destroy
         if entry.destroy
             halt 200, "OK".to_json
@@ -212,6 +242,7 @@ delete '/domains/:subdomain' do
             halt 412, { :error => "A problem occured during DNS deletion" }.to_json
         end
     end
+    halt 404
 end
 
 # Get all registered sub-domains
