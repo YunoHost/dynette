@@ -2,7 +2,16 @@ YunoHost DynDNS Server
 ======================
 
 
-**Note: Tested on Debian wheezy (should work on Ubuntu)**
+**Note: Tested on Debian wheezy and YunoHost 2.4 (should work on Ubuntu)**
+
+Setup quickly
+-------------------------------
+You can use the dynette_ynh package for YunoHost
+https://github.com/YunoHost-Apps/dynette_ynh
+
+
+Manual setup
+-------------------------------
 
 ```
 git clone https://github.com/YunoHost/dynette
@@ -104,6 +113,41 @@ a2ensite dynette
 service apache2 restart
 ```
 
+Alternative nginx configuration
+--------------------
+Alternatively you can use nginx
+
+```
+upstream dynette {
+	  server 127.0.0.1:5000;
+	  server 127.0.0.1:5001;
+	  server 127.0.0.1:5002;
+}
+
+server {
+	  listen   80;
+	  server_name dyndns.yunohost.org;
+
+	  access_log /var/www/dyndns.yunohost.org/log/access.log;
+	  error_log  /var/www/dyndns.yunohost.org/log/error.log;
+	  root     /var/www/dyndns.yunohost.org;
+	  index    index.html;
+
+	  location / {
+        try_files $uri dynette-ruby;
+    }
+
+    location @dynette-ruby {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect  off;
+        proxy_pass http://dynette;
+    }
+	}
+
+```
 
 Cron job configuration
 ----------------------
