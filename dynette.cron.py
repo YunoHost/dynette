@@ -11,14 +11,14 @@ rname     = 'hostmaster@yunohost.org' # Responsible person (https://tools.ietf.o
 
 allowed_operations = {
             '.'                  : ['A', 'AAAA', 'TXT', 'MX'],
-            '*'                  : ['A', 'AAAA'],
+            '*.'                 : ['A', 'AAAA'],
             'pubsub.'            : ['A', 'AAAA', 'CNAME'],
             'muc.'               : ['A', 'AAAA', 'CNAME'],
             'vjud.'              : ['A', 'AAAA', 'CNAME'],
             '_xmpp-client._tcp.' : ['SRV'],
             '_xmpp-server._tcp.' : ['SRV'],
-            'mail._domainkey'    : ['TXT'],
-            '_dmarc'             : ['TXT']
+            'mail._domainkey.'   : ['TXT'],
+            '_dmarc.'            : ['TXT']
 }
 
 
