@@ -101,45 +101,42 @@ async function sha256(message) {
 /* END SHA256 CODE - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-function sendDeleteRequest()
+async function sendDeleteRequest()
 {
     // Compute 'true' password
     var domain        = document.getElementById("domain").value;
     var user_password = document.getElementById("password").value;
-    var true_password;
-    sha256(domain+":"+user_password).then(function(d) {
-        var true_password = d;
+    var true_password = await sha256(domain+":"+user_password);
 
-        // Prepare request
-        var url = "./domains/"+domain
-        var params = "recovery_password="+true_password;
-        var xhttp = new XMLHttpRequest();
+    // Prepare request
+    var url = "./domains/"+domain
+    var params = "recovery_password="+true_password;
+    var xhttp = new XMLHttpRequest();
 
-        // Prepare handler
-        xhttp.onreadystatechange = function()
+    // Prepare handler
+    xhttp.onreadystatechange = function()
+    {
+        if (xhttp.readyState == 4)
         {
-            if (xhttp.readyState == 4)
+            if (xhttp.status == 200)
             {
-                if (xhttp.status == 200)
-                {
-                    document.getElementById("debug").innerHTML = xhttp.responseText;
-                }
-                else
-                {
-                    document.getElementById("debug").innerHTML = "Error ? " + xhttp.responseText;
-                }
+                document.getElementById("debug").innerHTML = xhttp.responseText;
             }
             else
             {
-                document.getElementById("debug").innerHTML = "Sending request...";
+                document.getElementById("debug").innerHTML = "Error ? " + xhttp.responseText;
             }
-        };
+        }
+        else
+        {
+            document.getElementById("debug").innerHTML = "Sending request...";
+        }
+    };
 
-        // Actually send the request
-        xhttp.open("DELETE", url, true);
-        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        xhttp.send(params);
-    })
+    // Actually send the request
+    xhttp.open("DELETE", url, true);
+    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhttp.send(params);
 }
 
 </script>
