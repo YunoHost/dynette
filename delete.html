@@ -4,6 +4,87 @@
 <html lang="fr">
     <head>
   <meta charset="utf-8">
+  <style>
+    /* Adapted from https://github.com/minimalcss/form/tree/master/demo */
+    input {
+      display: block;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      outline: 0;
+      border: 0;
+      border-radius: 0;
+      /*color: inherit;*/
+      font: inherit;
+      line-height: normal;
+      -webkit-appearance: none;
+         -moz-appearance: none;
+              appearance: none;
+    }
+    .button {
+      text-align:center;
+      color: #ffffff;
+      background-color: #4c9ed9;
+      padding-top: 0.5em;
+      padding-bottom:0.5em;
+    }
+    .label {
+      display: block;
+      margin-bottom: 0.25em;
+    }
+    .input {
+      padding: 10px;
+      border-width: 1px;
+      border-style: solid;
+      border-color: lightgray;
+      background-color: white;
+    }
+    .input:focus
+    {
+      border-color: gray;
+    }
+    .input::-webkit-input-placeholder
+    {
+      color: gray;
+    }
+    .input::-moz-placeholder
+    {
+      color: gray;
+    }
+    .input:-ms-input-placeholder
+    {
+      color: gray;
+    }
+    .input::placeholder
+    {
+      color: gray;
+    }
+    *, *:before, *:after {
+        box-sizing: border-box;
+    }
+    body {
+        margin: 2em;
+        font-family: sans-serif;
+    }
+    a {
+        color: black;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    form {
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 50px;
+    }
+    .input {
+        margin-bottom: 1.5em;
+    }
+  </style>
+
+
   <script>
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 /* START SHA256 CODE - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -65,13 +146,13 @@ function sendDeleteRequest()
     </head>
     <body>
         <form>
-            Domain to delete:<br>
-            <input type="text" id="domain"><br>
-            Password:<br>
-            <input type="password" id="password"><br>
-            <input type="button" value="Submit" onclick="sendDeleteRequest();">
+            <label class="label" for="domain">Domain to delete:</label>
+            <input class="input" type="text" id="domain">
+            <label class="label" for="password">Password:</label>
+            <input class="input" type="password" id="password">
+            <input type="button" class="button" value="Submit" onclick="sendDeleteRequest();">
+            <span id="debug"></span>
         </form>
-        <span id="debug"></span>
     </body>
 </html>
 
