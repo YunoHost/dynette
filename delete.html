@@ -1,0 +1,158 @@
+
+
+<!doctype html>
+<html lang="fr">
+    <head>
+  <meta charset="utf-8">
+  <style>
+    /* Adapted from https://github.com/minimalcss/form/tree/master/demo */
+    input {
+      display: block;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      outline: 0;
+      border: 0;
+      border-radius: 0;
+      /*color: inherit;*/
+      font: inherit;
+      line-height: normal;
+      -webkit-appearance: none;
+         -moz-appearance: none;
+              appearance: none;
+    }
+    .button {
+      text-align:center;
+      color: #ffffff;
+      background-color: #4c9ed9;
+      padding-top: 0.5em;
+      padding-bottom:0.5em;
+    }
+    .label {
+      display: block;
+      margin-bottom: 0.25em;
+    }
+    .input {
+      padding: 10px;
+      border-width: 1px;
+      border-style: solid;
+      border-color: lightgray;
+      background-color: white;
+    }
+    .input:focus
+    {
+      border-color: gray;
+    }
+    .input::-webkit-input-placeholder
+    {
+      color: gray;
+    }
+    .input::-moz-placeholder
+    {
+      color: gray;
+    }
+    .input:-ms-input-placeholder
+    {
+      color: gray;
+    }
+    .input::placeholder
+    {
+      color: gray;
+    }
+    *, *:before, *:after {
+        box-sizing: border-box;
+    }
+    body {
+        margin: 2em;
+        font-family: sans-serif;
+    }
+    a {
+        color: black;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    form {
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 50px;
+    }
+    .input {
+        margin-bottom: 1.5em;
+    }
+  </style>
+
+
+  <script>
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* START SHA256 CODE - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+// From https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+async function sha256(message) {
+    const msgBuffer = new TextEncoder('utf-8').encode(message);                     // encode as UTF-8
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);            // hash the message
+    const hashArray = Array.from(new Uint8Array(hashBuffer));                       // convert ArrayBuffer to Array
+    const hashHex = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join(''); // convert bytes to hex string
+    return hashHex;
+}
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* END SHA256 CODE - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+async function sendDeleteRequest()
+{
+    // Compute 'true' password
+    var domain        = document.getElementById("domain").value;
+    var user_password = document.getElementById("password").value;
+    var true_password = await sha256(domain+":"+user_password);
+
+    // Prepare request
+    var url = "./domains/"+domain
+    var params = "recovery_password="+true_password;
+    var xhttp = new XMLHttpRequest();
+
+    // Prepare handler
+    xhttp.onreadystatechange = function()
+    {
+        if (xhttp.readyState == 4)
+        {
+            if (xhttp.status == 200)
+            {
+                document.getElementById("debug").innerHTML = xhttp.responseText;
+            }
+            else
+            {
+                document.getElementById("debug").innerHTML = "Error ? " + xhttp.responseText;
+            }
+        }
+        else
+        {
+            document.getElementById("debug").innerHTML = "Sending request...";
+        }
+    };
+
+    // Actually send the request
+    xhttp.open("DELETE", url, true);
+    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhttp.send(params);
+}
+
+</script>
+    </head>
+    <body>
+        <form>
+            <label class="label" for="domain">Domain to delete:</label>
+            <input class="input" type="text" id="domain">
+            <label class="label" for="password">Password:</label>
+            <input class="input" type="password" id="password">
+            <input type="button" class="button" value="Submit" onclick="sendDeleteRequest();">
+            <span id="debug"></span>
+        </form>
+    </body>
+</html>
+
+
+
+
