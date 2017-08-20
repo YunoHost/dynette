@@ -25,7 +25,6 @@ allowed_operations = {
 ### Script ###
 
 import os
-import sys
 import json
 from urllib import urlopen
 
