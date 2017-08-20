@@ -105,8 +105,7 @@ os.system('cp '+ conf_file +' '+ conf_file +'.back')
 
 # Write Bind configuration file.
 with open(conf_file, 'w') as zone:
-    for line in lines:
-        zone.write(line + '\n')
+    zone.write('\n'.join(lines) + '\n')
 
 # Restore ownership
 os.system('chown -R bind:bind '+ zone_dir +' '+ conf_file)
