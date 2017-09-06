@@ -95,7 +95,7 @@ for url in subs_urls:
         for entry in result:
             lines.extend([
                 'key '+ entry['subdomain'] +'. {',
-                '       algorithm hmac-md5;',
+                '       algorithm ' + entry['key_algo'] + ';',
                 '       secret "'+ entry['public_key'] +'";',
                 '};',
             ])
