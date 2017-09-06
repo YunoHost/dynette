@@ -27,6 +27,13 @@ class Entry
 
     property :id, Serial
     property :public_key, String
+
+    # for historical reasons, dnssec algo was md5, so we assume that every
+    # entry is using md5 while we provide automatic upgrade code inside
+    # yunohost to move to sha256 instead (and register new domains using sh256)
+    # it would be good to depreciate md5 in the futur but that migh be complicated
+    property :key_algo, String, :default => "hmac-md5"
+
     property :subdomain, String
     property :current_ip, String
     property :created_at, DateTime
