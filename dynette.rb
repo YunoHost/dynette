@@ -114,9 +114,13 @@ end
     before path do
         if params.has_key?("public_key")
             public_key = Base64.decode64(params[:public_key].encode('ascii-8bit'))
-            unless public_key.length == 24
+            # might be 88
+            unless public_key.length == 24 or public_key.length == 89
                 halt 400, { :error => "Key is invalid: #{public_key.to_s.encode('UTF-8', {:invalid => :replace, :undef => :replace, :replace => '?'})}" }.to_json
             end
+        end
+        if params.has_key?("key_algo") and not ["hmac-md5", "hmac-sha512"].include? params[:key_algo]
+            halt 400, { :error => "key_algo value is invalid: #{public_key}, it should be either 'hmac-sha512' or 'hmac-md5' (but you should **really** use 'hmac-sha512')" }.to_json
         end
         if params.has_key?("subdomain")
             unless params[:subdomain].match /^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$/
@@ -183,8 +187,14 @@ post '/key/:public_key' do
         recovery_password = ""
     end
 
+    if params.has_key?("key_algo")
+        key_algo = params[:key_algo]
+    else # default until we'll one day kill it
+        key_algo = "hmac-md5"
+    end
+
     # Process
-    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now, :recovery_password => recovery_password)
+    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now, :recovery_password => recovery_password, :key_algo => key_algo)
     entry.ips << Ip.create(:ip_addr => request.ip)
 
     if entry.save
