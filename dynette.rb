@@ -204,6 +204,39 @@ post '/key/:public_key' do
     end
 end
 
+# Migrate a key from hmac-md5 to hmac-sha512 because it's 2017
+put '/migrate_key_to_sha512/:public_key' do
+    # TODO check parameters
+    params[:public_key_md5] = Base64.decode64(params[:public_key_md5].encode('ascii-8bit'))
+    params[:public_key_sha512] = Base64.decode64(params[:public_key_sha512].encode('ascii-8bit'))
+
+    # TODO signing handling
+
+    # TODO check entry exists
+    entry = Entry.first(:public_key => params[:public_key_md5],
+                        :key_algo => "hmac-md5")
+
+    unless request.ip == entry.current_ip
+        entry.ips << Ip.create(:ip_addr => request.ip)
+    end
+    entry.current_ip = request.ip
+
+    entry.public_key = params[:public_key_sha512]
+    entry.key_algo = "hmac-sha512"
+
+    unless entry.save
+        halt 412, { :error => "A problem occured during key algo migration" }.to_json
+    end
+
+    # need to regenerate bind9 stuff
+    `python ./dynette.cron.py`
+    # flush this idiotic bind cache because he doesn't know how to do that
+    # himself
+    `rndc flush`
+
+    halt 200, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
+end
+
 # Update a sub-domain
 put '/key/:public_key' do
     params[:public_key] = Base64.decode64(params[:public_key].encode('ascii-8bit'))
