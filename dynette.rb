@@ -234,7 +234,7 @@ put '/migrate_key_to_sha512/:public_key' do
     # himself
     `rndc flush`
 
-    halt 200, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
+    halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
 end
 
 # Update a sub-domain
