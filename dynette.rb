@@ -205,7 +205,7 @@ post '/key/:public_key' do
 end
 
 # Migrate a key from hmac-md5 to hmac-sha512 because it's 2017
-put '/migrate_key_to_sha512/:public_key' do
+put '/migrate_key_to_sha512/' do
     # TODO check parameters
     params[:public_key_md5] = Base64.decode64(params[:public_key_md5].encode('ascii-8bit'))
     params[:public_key_sha512] = Base64.decode64(params[:public_key_sha512].encode('ascii-8bit'))
