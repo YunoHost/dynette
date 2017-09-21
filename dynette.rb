@@ -26,7 +26,8 @@ class Entry
     include BCrypt
 
     property :id, Serial
-    property :public_key, String
+    # we need at least 90 chars for hmac-sha512 keys
+    property :public_key, String, :length => 100
 
     # for historical reasons, dnssec algo was md5, so we assume that every
     # entry is using md5 while we provide automatic upgrade code inside
