@@ -228,12 +228,13 @@ put '/migrate_key_to_sha512/' do
         halt 412, { :error => "A problem occured during key algo migration" }.to_json
     end
 
-    # need to regenerate bind9 stuff
-    # yes this is awful
-    `python /root/dynette/dynette.cron.py`
-    # flush this idiotic bind cache because he doesn't know how to do that
-    # himself
-    `/usr/sbin/rndc flush`
+    # I don't have any other way of communicating with this dynette.cron.py
+    # this is awful
+    File.open("/tmp/dynette_flush_bind_cache", "w").close
+
+    # assume that the dynette.cron.py runs every minute like on prod and add a
+    # bit of security margin. I hate that.
+    sleep(90)
 
     halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
 end
