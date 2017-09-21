@@ -229,10 +229,11 @@ put '/migrate_key_to_sha512/' do
     end
 
     # need to regenerate bind9 stuff
-    `python ./dynette.cron.py`
+    # yes this is awful
+    `python /root/dynette/dynette.cron.py`
     # flush this idiotic bind cache because he doesn't know how to do that
     # himself
-    `rndc flush`
+    `/usr/sbin/rndc flush`
 
     halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
 end
