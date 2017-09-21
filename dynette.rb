@@ -235,7 +235,7 @@ put '/migrate_key_to_sha512/' do
 
     # assume that the dynette.cron.py runs every minute like on prod and add a
     # bit of security margin. I hate that.
-    sleep(90)
+    sleep(180)
 
     halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
 end
