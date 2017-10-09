@@ -29,7 +29,7 @@ class Entry
     # we need at least 90 chars for hmac-sha512 keys
     property :public_key, String, :length => 100
 
-    # for historical reasons, dnssec algo was md5, so we assume that every
+    # for historical reasons, tsig algo was md5, so we assume that every
     # entry is using md5 while we provide automatic upgrade code inside
     # yunohost to move to sha512 instead (and register new domains using sha512)
     # it would be good to depreciate md5 in the futur but that migh be complicated
