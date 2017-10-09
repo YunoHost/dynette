@@ -232,6 +232,8 @@ put '/migrate_key_to_sha512/' do
     # I don't have any other way of communicating with this dynette.cron.py
     # this is awful
     File.open("/tmp/dynette_flush_bind_cache", "w").close
+    # let's try flusing here, hope that could help ... (this design is so awful)
+    `/usr/sbin/rndc flush`
 
     # assume that the dynette.cron.py runs every minute like on prod and add a
     # bit of security margin. I hate that.
