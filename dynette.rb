@@ -115,7 +115,7 @@ end
     before path do
         if params.has_key?("public_key")
             public_key = Base64.decode64(params[:public_key].encode('ascii-8bit'))
-            unless public_key.length == 24 or public_key.length == 32
+            unless public_key.length == 24 or public_key.length == 89
                 halt 400, { :error => "Key is invalid: #{public_key.to_s.encode('UTF-8', {:invalid => :replace, :undef => :replace, :replace => '?'})}" }.to_json
             end
         end
