@@ -222,6 +222,17 @@ put '/migrate_key_to_sha512/' do
     entry.public_key = params[:public_key_sha512]
     entry.key_algo = "hmac-sha512"
 
+    # we probably want to remove this once this algo is stable to avoid having
+    # an entry point in our api where some could possibly hammer our db to try
+    # to find if a key is registered or not
+    if entry == nil
+        if Entry.first(:public_key => params[:public_key_sha512])
+            halt 400, { :error => "This domain has already been migrated to hmac-sha512." }.to_json
+        else
+            halt 404, { :error => "There is not domain registered with this key." }.to_json
+        end
+    end
+
     unless entry.save
         halt 412, { :error => "A problem occured during key algo migration" }.to_json
     end
