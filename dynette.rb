@@ -210,8 +210,6 @@ put '/migrate_key_to_sha512/' do
     params[:public_key_md5] = Base64.decode64(params[:public_key_md5].encode('ascii-8bit'))
     params[:public_key_sha512] = Base64.decode64(params[:public_key_sha512].encode('ascii-8bit'))
 
-    # TODO signing handling
-
     # TODO check entry exists
     entry = Entry.first(:public_key => params[:public_key_md5],
                         :key_algo => "hmac-md5")
