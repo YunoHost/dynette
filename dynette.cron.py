@@ -95,7 +95,7 @@ for url in subs_urls:
         for entry in result:
             lines.extend([
                 'key '+ entry['subdomain'] +'. {',
-                '       algorithm hmac-md5;',
+                '       algorithm ' + entry['key_algo'] + ';',
                 '       secret "'+ entry['public_key'] +'";',
                 '};',
             ])
@@ -119,3 +119,9 @@ else:
     os.system('/usr/sbin/rndc reload')
     print("An error occured ! Please check daemon.log and your conf.bad")
     exit(1)
+
+# mein got this is so awful
+if os.path.exists('/tmp/dynette_flush_bind_cache'):
+    os.system('/usr/sbin/rndc flush')
+    os.system('/usr/sbin/rndc reload')
+    os.system('rm /tmp/dynette_flush_bind_cache')

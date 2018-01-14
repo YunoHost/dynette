@@ -26,7 +26,15 @@ class Entry
     include BCrypt
 
     property :id, Serial
-    property :public_key, String
+    # we need at least 90 chars for hmac-sha512 keys
+    property :public_key, String, :length => 100
+
+    # for historical reasons, tsig algo was md5, so we assume that every
+    # entry is using md5 while we provide automatic upgrade code inside
+    # yunohost to move to sha512 instead (and register new domains using sha512)
+    # it would be good to depreciate md5 in the futur but that migh be complicated
+    property :key_algo, String, :default => "hmac-md5"
+
     property :subdomain, String
     property :current_ip, String
     property :created_at, DateTime
@@ -107,9 +115,12 @@ end
     before path do
         if params.has_key?("public_key")
             public_key = Base64.decode64(params[:public_key].encode('ascii-8bit'))
-            unless public_key.length == 24
+            unless public_key.length == 24 or public_key.length == 89
                 halt 400, { :error => "Key is invalid: #{public_key.to_s.encode('UTF-8', {:invalid => :replace, :undef => :replace, :replace => '?'})}" }.to_json
             end
+        end
+        if params.has_key?("key_algo") and not ["hmac-md5", "hmac-sha512"].include? params[:key_algo]
+            halt 400, { :error => "key_algo value is invalid: #{public_key}, it should be either 'hmac-sha512' or 'hmac-md5' (but you should **really** use 'hmac-sha512')" }.to_json
         end
         if params.has_key?("subdomain")
             unless params[:subdomain].match /^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$/
@@ -176,8 +187,14 @@ post '/key/:public_key' do
         recovery_password = ""
     end
 
+    if params.has_key?("key_algo")
+        key_algo = params[:key_algo]
+    else # default until we'll one day kill it
+        key_algo = "hmac-md5"
+    end
+
     # Process
-    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now, :recovery_password => recovery_password)
+    entry = Entry.new(:public_key => params[:public_key], :subdomain => params[:subdomain], :current_ip => request.ip, :created_at => Time.now, :recovery_password => recovery_password, :key_algo => key_algo)
     entry.ips << Ip.create(:ip_addr => request.ip)
 
     if entry.save
@@ -185,6 +202,48 @@ post '/key/:public_key' do
     else
         halt 412, { :error => "A problem occured during DNS registration" }.to_json
     end
+end
+
+# Migrate a key from hmac-md5 to hmac-sha512 because it's 2017
+put '/migrate_key_to_sha512/' do
+    # TODO check parameters
+    params[:public_key_md5] = Base64.decode64(params[:public_key_md5].encode('ascii-8bit'))
+    params[:public_key_sha512] = Base64.decode64(params[:public_key_sha512].encode('ascii-8bit'))
+
+    # TODO check entry exists
+    entry = Entry.first(:public_key => params[:public_key_md5],
+                        :key_algo => "hmac-md5")
+
+    unless request.ip == entry.current_ip
+        entry.ips << Ip.create(:ip_addr => request.ip)
+    end
+    entry.current_ip = request.ip
+
+    entry.public_key = params[:public_key_sha512]
+    entry.key_algo = "hmac-sha512"
+
+    # we probably want to remove this once this algo is stable to avoid having
+    # an entry point in our api where some could possibly hammer our db to try
+    # to find if a key is registered or not
+    if entry == nil
+        if Entry.first(:public_key => params[:public_key_sha512])
+            halt 400, { :error => "This domain has already been migrated to hmac-sha512." }.to_json
+        else
+            halt 404, { :error => "There is not domain registered with this key." }.to_json
+        end
+    end
+
+    unless entry.save
+        halt 412, { :error => "A problem occured during key algo migration" }.to_json
+    end
+
+    # I don't have any other way of communicating with this dynette.cron.py
+    # this is awful
+    File.open("/tmp/dynette_flush_bind_cache", "w").close
+    # let's try flusing here, hope that could help ... (this design is so awful)
+    `/usr/sbin/rndc flush`
+
+    halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
 end
 
 # Update a sub-domain
