@@ -12,7 +12,7 @@ require 'bcrypt'
 ######################
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://dynette:myPassword@localhost/dynette")
-DOMAINS = ["nohost.me", "noho.st"]
+DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 ALLOWED_IP = ["127.0.0.1"]
 
 
