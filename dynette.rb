@@ -80,11 +80,11 @@ class Jobqueue
     property :task, String
 end
 
-def schedule_conf_rewrite(task)
+def schedule_conf_rewrite()
     Jobqueue.create(:task => "conf_rewrite")
 end
 
-def schedule_bind9_cache_flush(task)
+def schedule_bind9_cache_flush()
     Jobqueue.create(:task => "bind9_cache_flush")
 end
 
