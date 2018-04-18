@@ -144,9 +144,7 @@ with psycopg2.connect(postgresql_dsn) as postgresql_connection:
             os.system('chown -R bind:bind '+ zone_dir +' '+ conf_file)
 
             # Reload Bind
-            if os.system('/usr/sbin/rndc reload') == 0:
-                sys.exit(0)
-            else:
+            if os.system('/usr/sbin/rndc reload') != 0:
                 os.system('cp '+ conf_file +' '+ conf_file +'.bad')
                 os.system('cp '+ conf_file +'.back '+ conf_file)
                 os.system('/usr/sbin/rndc reload')
