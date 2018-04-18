@@ -151,4 +151,3 @@ with psycopg2.connect(postgresql_dsn) as postgresql_connection:
         if need_bind9_cache_flush:
             os.system('/usr/sbin/rndc flush')
             os.system('/usr/sbin/rndc reload')
-            os.system('rm /tmp/dynette_flush_bind_cache')
