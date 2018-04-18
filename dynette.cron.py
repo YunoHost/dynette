@@ -49,7 +49,9 @@ with psycopg2.connect(postgresql_dsn) as postgresql_connection:
         # end
         # consume all available tasks at once to merge them and avoir doing
         # useless jobs
-        for task in psql.execute("SELECT task FROM jobqueues ORDER BY id ASC;"):
+        psql.execute("SELECT task FROM jobqueues ORDER BY id ASC;")
+
+        for task in psql.fetchall():
             task = task[0]
             if task == "conf_rewrite":
                 need_rewrite = True
