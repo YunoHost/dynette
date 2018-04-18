@@ -145,13 +145,13 @@ with psycopg2.connect(postgresql_dsn) as postgresql_connection:
 
             # Reload Bind
             if os.system('/usr/sbin/rndc reload') == 0:
-                exit(0)
+                sys.exit(0)
             else:
                 os.system('cp '+ conf_file +' '+ conf_file +'.bad')
                 os.system('cp '+ conf_file +'.back '+ conf_file)
                 os.system('/usr/sbin/rndc reload')
                 print("An error occured ! Please check daemon.log and your conf.bad")
-                exit(1)
+                sys.exit(1)
 
         # flush bind9 cache (mostly because we got a hmac-sha512 key migration
         if need_bind9_cache_flush:
