@@ -68,6 +68,25 @@ class Ipban
     property :ip_addr, String, :key => true
 end
 
+################
+### JobQueue ###
+################
+
+# JobQueue to communicate with the conf updater
+class Jobqueue
+    include DataMapper::Resource
+
+    property :id, Serial, :key => true
+    property :task, String
+end
+
+def schedule_conf_rewrite()
+    Jobqueue.create(:task => "conf_rewrite")
+end
+
+def schedule_bind9_cache_flush()
+    Jobqueue.create(:task => "bind9_cache_flush")
+end
 
 ################
 ### Handlers ###
@@ -198,6 +217,7 @@ post '/key/:public_key' do
     entry.ips << Ip.create(:ip_addr => request.ip)
 
     if entry.save
+        schedule_conf_rewrite
         halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
     else
         halt 412, { :error => "A problem occured during DNS registration" }.to_json
@@ -237,11 +257,8 @@ put '/migrate_key_to_sha512/' do
         halt 412, { :error => "A problem occured during key algo migration" }.to_json
     end
 
-    # I don't have any other way of communicating with this dynette.cron.py
-    # this is awful
-    File.open("/tmp/dynette_flush_bind_cache", "w").close
-    # let's try flusing here, hope that could help ... (this design is so awful)
-    `/usr/sbin/rndc flush`
+    schedule_conf_rewrite
+    schedule_bind9_cache_flush
 
     halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
 end
@@ -255,6 +272,7 @@ put '/key/:public_key' do
     end
     entry.current_ip = request.ip
     if entry.save
+        schedule_conf_rewrite
         halt 201, { :public_key => entry.public_key, :subdomain => entry.subdomain, :current_ip => entry.current_ip }.to_json
     else
         halt 412, { :error => "A problem occured during DNS update" }.to_json
@@ -270,6 +288,7 @@ delete '/key/:public_key' do
     if entry = Entry.first(:public_key => params[:public_key])
         Ip.first(:entry_id => entry.id).destroy
         if entry.destroy
+            schedule_conf_rewrite
             halt 200, "OK".to_json
         else
             halt 412, { :error => "A problem occured during DNS deletion" }.to_json
@@ -296,6 +315,7 @@ delete '/domains/:subdomain' do
 
         Ip.first(:entry_id => entry.id).destroy
         if entry.destroy
+            schedule_conf_rewrite
             halt 200, "OK".to_json
         else
             halt 412, { :error => "A problem occured during DNS deletion" }.to_json
