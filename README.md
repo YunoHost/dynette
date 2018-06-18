@@ -179,6 +179,14 @@ Test it's working
 
 `wget -q -O - http://127.0.0.1:5000/test/someDomain.nohost.me`
 
+Adding a new subdomain
+----------------------
+
+- Add the domain in `DOMAINS` in dynette.rb
+- Restart dynette (and/or thin ?)
+- Check that https://dynette.tld/domains actually shows the new domain
+- Test adding a new domain from YunoHost
+
 Troobleshooting
 ---------------
 
