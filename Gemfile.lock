@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     addressable (2.3.4)
+    bcrypt (3.1.11)
     bcrypt-ruby (3.0.1)
     daemons (1.1.9)
     data_mapper (1.2.0)
@@ -14,7 +15,7 @@ GEM
       dm-transactions (~> 1.2.0)
       dm-types (~> 1.2.0)
       dm-validations (~> 1.2.0)
-    data_objects (0.10.13)
+    data_objects (0.10.17)
       addressable (~> 2.1)
     dm-aggregates (1.2.0)
       dm-core (~> 1.2.0)
@@ -50,15 +51,15 @@ GEM
       uuidtools (~> 2.1)
     dm-validations (1.2.0)
       dm-core (~> 1.2.0)
-    do_postgres (0.10.13)
-      data_objects (= 0.10.13)
-    eventmachine (1.0.3)
+    do_postgres (0.10.17)
+      data_objects (= 0.10.17)
+    eventmachine (1.2.5)
     fastercsv (1.5.5)
-    json (1.8.0)
+    json (1.8.6)
     json_pure (1.8.0)
     multi_json (1.7.7)
-    pg (0.15.1)
-    rack (1.5.2)
+    pg (0.21.0)
+    rack (1.6.8)
     rack-protection (1.5.0)
       rack
     sinatra (1.4.3)
@@ -77,9 +78,38 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  data_mapper
-  dm-postgres-adapter
-  json
-  pg
-  sinatra
-  thin
+  addressable (= 2.3.4)
+  bcrypt (= 3.1.11)
+  bcrypt-ruby (= 3.0.1)
+  bundler (>= 1.7.4)
+  daemons (= 1.1.9)
+  data_mapper (= 1.2.0)
+  data_objects (>= 0.10.13)
+  dm-aggregates (= 1.2.0)
+  dm-constraints (= 1.2.0)
+  dm-core (= 1.2.1)
+  dm-do-adapter (= 1.2.0)
+  dm-migrations (= 1.2.0)
+  dm-postgres-adapter (= 1.2.0)
+  dm-serializer (= 1.2.2)
+  dm-timestamps (= 1.2.0)
+  dm-transactions (= 1.2.0)
+  dm-types (= 1.2.2)
+  dm-validations (= 1.2.0)
+  do_postgres (>= 0.10.17)
+  eventmachine (>= 1.0.3)
+  fastercsv (= 1.5.5)
+  json (>= 1.8.0)
+  json_pure (= 1.8.0)
+  multi_json (= 1.7.7)
+  pg (>= 0.15.1)
+  rack (>= 1.5.2)
+  rack-protection (= 1.5.0)
+  sinatra (= 1.4.3)
+  stringex (= 1.5.1)
+  thin (= 1.5.1)
+  tilt (= 1.4.1)
+  uuidtools (= 2.1.4)
+
+BUNDLED WITH
+   1.13.6
