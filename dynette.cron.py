@@ -16,6 +16,7 @@ allowed_operations = {
             'pubsub.'            : ['A', 'AAAA', 'CNAME'],
             'muc.'               : ['A', 'AAAA', 'CNAME'],
             'vjud.'              : ['A', 'AAAA', 'CNAME'],
+            'xmpp-upload.'       : ['A', 'AAAA', 'CNAME'],
             '_xmpp-client._tcp.' : ['SRV'],
             '_xmpp-server._tcp.' : ['SRV'],
             'mail._domainkey.'   : ['TXT'],
