@@ -11,7 +11,7 @@ ns1       = 'ns1.yunohost.org'
 rname     = 'hostmaster@yunohost.org' # Responsible person (https://tools.ietf.org/html/rfc1035#section-3.3.13)
 
 allowed_operations = {
-            '.'                  : ['A', 'AAAA', 'TXT', 'MX'],
+            '.'                  : ['A', 'AAAA', 'TXT', 'MX', 'CAA'],
             '*.'                 : ['A', 'AAAA'],
             'pubsub.'            : ['A', 'AAAA', 'CNAME'],
             'muc.'               : ['A', 'AAAA', 'CNAME'],
