@@ -1,9 +1,21 @@
 {
-    "database_url": "postgres://{{ db_user }}:{{ db_password }}@localhost/{{ db_name }}",
-    "domains"     : [ {{ subdomains }} ],
-    "subs_url"    : [ https://{{ dynette_domain }} ],
-    "ns0"         : {{ ns0 }},
-    "ns1"         : {{ ns1 }},
-    "rname"       : {{ rname }},
-    "master_key"  : {{ master_key }}
+    "database_url"   : "postgres://{{ db_user }}:{{ db_password }}@localhost/{{ db_name }}",
+    "dyndns_domains" : [ {{ subdomains }} ],
+    "base_url"       : "https://{{ dynette_domain }}",
+    "ns0"            : "{{ ns0 }}",
+    "ns1"            : "{{ ns1 }}",
+    "rname"          : "{{ rname }}",
+    "master_key"     : "{{ master_key }}",
+    "allowed_operations": {
+        "."                  : ["A", "AAAA", "TXT", "MX", "CAA"],
+        "*."                 : ["A", "AAAA"],
+        "pubsub."            : ["A", "AAAA", "CNAME"],
+        "muc."               : ["A", "AAAA", "CNAME"],
+        "vjud."              : ["A", "AAAA", "CNAME"],
+        "xmpp-upload."       : ["A", "AAAA", "CNAME"],
+        "_xmpp-client._tcp." : ["SRV"],
+        "_xmpp-server._tcp." : ["SRV"],
+        "mail._domainkey."   : ["TXT"],
+        "_dmarc."            : ["TXT"]
+    }
 }

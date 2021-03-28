@@ -1,14 +1,11 @@
 YunoHost DynDNS Server
 ======================
 
-
-**Note: Tested on Debian wheezy and YunoHost 2.4 (should work on Ubuntu)**
-
 Setup quickly
 -------------------------------
+
 You can use the dynette_ynh package for YunoHost
 https://github.com/YunoHost-Apps/dynette_ynh
-
 
 Web subscribe server deployment
 -------------------------------

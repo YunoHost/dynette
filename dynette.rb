@@ -21,7 +21,7 @@ rescue => err
 end
 
 DataMapper.setup(:default, ENV['DATABASE_URL'] || config['database_url'])
-DOMAINS = config['domains']
+DOMAINS = config['dyndns_domains']
 ALLOWED_IP = ["127.0.0.1"]
 
 ###############
