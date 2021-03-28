@@ -10,20 +10,12 @@ You can use the dynette_ynh package for YunoHost
 https://github.com/YunoHost-Apps/dynette_ynh
 
 
-Manual setup
--------------------------------
-
-```
-git clone https://github.com/YunoHost/dynette
-```
-
-
 Web subscribe server deployment
 -------------------------------
 
 Install required stuff
 ```
-$ apt-get install postgresql postgresql-server-dev-9.4 ruby thin libpq-dev bundler apache2 bind9 python
+$ apt install postgresql postgresql-server-dev-all ruby thin libpq-dev bundler nginx bind9 python3
 ```
 
 Prepare user dynette
@@ -64,56 +56,7 @@ thin config -C /etc/thin2.1/dynette.yml -c /home/dynette/dynette/ --servers 3 -p
 service thin restart
 ```
 
-
-Apache configuration
---------------------
-
-```
-vim /etc/apache2/sites-available/dynette
-```
-
-Paste & change server name in below configuration:
-```
-<VirtualHost *:80>
-  ServerName dyndns.yunohost.org
-
-  RewriteEngine On
-
-  <Proxy balancer://thinservers>
-    BalancerMember http://127.0.0.1:5000
-    BalancerMember http://127.0.0.1:5001
-    BalancerMember http://127.0.0.1:5002
-  </Proxy>
-
-  # Redirect all non-static requests to thin
-  RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f
-  RewriteRule ^/(.*)$ balancer://thinservers%{REQUEST_URI} [P,QSA,L]
-
-  ProxyPass / balancer://thinservers/
-  ProxyPassReverse / balancer://thinservers/
-  ProxyPreserveHost on
-
-  <Proxy *>
-    Order deny,allow
-    Allow from all
-  </Proxy>
-
-  # Custom log file locations
-  ErrorLog  /var/log/apache2/dynette-error.log
-  CustomLog /var/log/apache2/dynette-access.log combined
-
-</VirtualHost>
-```
-
-Enable apache2 sites & modules:
-```
-a2enmod proxy
-a2enmod rewrite
-a2ensite dynette
-service apache2 restart
-```
-
-Alternative nginx configuration
+nginx configuration
 --------------------
 Alternatively you can use nginx
 
@@ -145,27 +88,14 @@ server {
         proxy_redirect  off;
         proxy_pass http://dynette;
     }
-	}
-
+}
 ```
 
-Cron job configuration
-----------------------
+Configure
+---------
 
-Edit dynette.cron.py and change settings:
-```
-# If you want to simply do test in local, use "http://127.0.0.1:5000/"
-subs_urls = ['https://dyndns.yunohost.org']
-ns0       = 'ns0.yunohost.org'
-ns1       = 'ns1.yunohost.org'
-```
+`cp config.file.j2 config.file` and fill all the info
 
-Create and edit master.key file is Dynette directory
-```
-echo "MyMasterKey" > master.key
-```
-
-Create dynette log file
 ```
 touch /var/log/dynette.log
 ```
@@ -174,18 +104,11 @@ Enable cronjob for dynette (crontab -e)
 ```
 * * * * * /path/to/dynette/dynette.cron.py >> /var/log/dynette.log 2>&1
 ```
+
 Test it's working
 -----------------
 
 `wget -q -O - http://127.0.0.1:5000/test/someDomain.nohost.me`
-
-Adding a new subdomain
-----------------------
-
-- Add the domain in `DOMAINS` in dynette.rb
-- Restart dynette (and/or thin ?)
-- Check that https://dynette.tld/domains actually shows the new domain
-- Test adding a new domain from YunoHost
 
 Troobleshooting
 ---------------

@@ -11,10 +11,18 @@ require 'bcrypt'
 ###  Configuration ###
 ######################
 
-DataMapper.setup(:default, ENV['DATABASE_URL'] || "postgres://dynette:myPassword@localhost/dynette")
-DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
-ALLOWED_IP = ["127.0.0.1"]
+# Read configuration file
+begin
+    config_file = File.read('config.json')
+    config = JSON.parse(config_file)
+rescue => err
+    puts "Exception: #{err}"
+    err
+end
 
+DataMapper.setup(:default, ENV['DATABASE_URL'] || config['database_url'])
+DOMAINS = config['domains']
+ALLOWED_IP = ["127.0.0.1"]
 
 ###############
 ### Classes ###
