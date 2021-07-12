@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'addressable', '= 2.3.4'
+gem 'addressable', '2.8.0'
 gem 'bcrypt', '=3.1.11'
 gem 'bcrypt-ruby', '=3.0.1'
 gem 'bundler', '>=1.7.4'
