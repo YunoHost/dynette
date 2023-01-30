@@ -9,7 +9,9 @@ from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-DOMAIN_REGEX = re.compile(r"^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$")
+DOMAIN_REGEX = re.compile(
+    r"^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$"
+)
 
 app = Flask(__name__)
 app.config.from_file("config.yml", load=yaml.safe_load)
@@ -20,14 +22,20 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-assert os.path.isdir(app.config['DB_FOLDER']), "You should create the DB folder declared in the config"
+assert os.path.isdir(
+    app.config["DB_FOLDER"]
+), "You should create the DB folder declared in the config"
+
 
 def _validate_domain(domain):
 
     if not DOMAIN_REGEX.match(domain):
         return {"error": f"This is not a valid domain: {domain}"}, 400
 
-    if len(domain.split(".")) != 3 or domain.split(".", 1)[-1] not in app.config["DOMAINS"]:
+    if (
+        len(domain.split(".")) != 3
+        or domain.split(".", 1)[-1] not in app.config["DOMAINS"]
+    ):
         return {"error": f"This subdomain is not handled by this dynette server."}, 400
 
 
@@ -36,19 +44,19 @@ def _is_available(domain):
     return not os.path.exists(f"{app.config['DB_FOLDER']}/{domain}.key")
 
 
-@app.route('/')
+@app.route("/")
 @limiter.exempt
 def home():
-    return 'Wanna play the dynette?'
+    return "Wanna play the dynette?"
 
 
-@app.route('/domains')
+@app.route("/domains")
 @limiter.exempt
 def domains():
     return jsonify(app.config["DOMAINS"]), 200
 
 
-@app.route('/test/<domain>')
+@app.route("/test/<domain>")
 @limiter.limit("3 per minute")
 def availability(domain):
 
@@ -62,7 +70,7 @@ def availability(domain):
         return {"error": f"Subdomain already taken: {domain}"}, 409
 
 
-@app.route('/key/<key>', methods=['POST'])
+@app.route("/key/<key>", methods=["POST"])
 @limiter.limit("5 per hour")
 def register(key):
 
@@ -97,9 +105,10 @@ def register(key):
             return {"error": "Recovery password too long"}, 409
 
         r_init = recovery_password
-        recovery_password = bcrypt.hashpw(password=recovery_password.encode(), salt=bcrypt.gensalt(14))
+        recovery_password = bcrypt.hashpw(
+            password=recovery_password.encode(), salt=bcrypt.gensalt(14)
+        )
         recovery_password = base64.b64encode(recovery_password).decode()
-
 
     with open(f"{app.config['DB_FOLDER']}/{subdomain}.key", "w") as f:
         f.write(key)
@@ -110,7 +119,8 @@ def register(key):
 
     return "OK", 201
 
-@app.route('/domains/<subdomain>', methods=['DELETE'])
+
+@app.route("/domains/<subdomain>", methods=["DELETE"])
 @limiter.limit("5 per hour")
 def delete_using_recovery_password_or_key(subdomain):
 
@@ -120,8 +130,9 @@ def delete_using_recovery_password_or_key(subdomain):
         assert isinstance(data, dict)
         recovery_password = data.get("recovery_password")
         key = data.get("key")
-        assert (recovery_password and isinstance(recovery_password, str)) \
-               or (key and isinstance(key, str))
+        assert (recovery_password and isinstance(recovery_password, str)) or (
+            key and isinstance(key, str)
+        )
         if key:
             key = base64.b64decode(key).decode()
     except Exception:
@@ -139,7 +150,9 @@ def delete_using_recovery_password_or_key(subdomain):
             if not hmac.compare_digest(key, f.read()):
                 return "Access denied", 403
     if recovery_password:
-        if not os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"):
+        if not os.path.exists(
+            f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"
+        ):
             return "Access denied", 403
         with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password") as f:
             hashed = base64.b64decode(f.read())
