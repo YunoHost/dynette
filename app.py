@@ -8,6 +8,8 @@ import bcrypt
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 DOMAIN_REGEX = re.compile(
     r"^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$"
@@ -15,6 +17,8 @@ DOMAIN_REGEX = re.compile(
 
 app = Flask(__name__)
 app.config.from_file("config.yml", load=yaml.safe_load)
+# cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -65,7 +69,7 @@ def availability(domain):
         return error
 
     if _is_available(domain):
-        return f"Domain {domain} is available", 200
+        return f'"Domain {domain} is available"', 200
     else:
         return {"error": f"Subdomain already taken: {domain}"}, 409
 
@@ -83,12 +87,11 @@ def register(key):
             return {"error": "Key format is invalid"}, 400
 
     try:
-        data = request.get_json(force=True)
-        assert isinstance(data, dict)
+        data = dict(request.form) # get_json(force=True)
         subdomain = data.get("subdomain")
         assert isinstance(subdomain, str)
-    except Exception:
-        return {"error": "Invalid request"}, 400
+    except Exception as e:
+        return {"error": f"Invalid request: {str(request.form)}"}, 400
 
     error = _validate_domain(subdomain)
     if error:
@@ -117,7 +120,7 @@ def register(key):
         with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password", "w") as f:
             f.write(recovery_password)
 
-    return "OK", 201
+    return '"OK"', 201
 
 
 @app.route("/domains/<subdomain>", methods=["DELETE"])
@@ -126,8 +129,7 @@ def delete_using_recovery_password_or_key(subdomain):
 
     try:
         assert isinstance(subdomain, str)
-        data = request.get_json(force=True)
-        assert isinstance(data, dict)
+        data = dict(request.data)  # get_json(force=True)
         recovery_password = data.get("recovery_password")
         key = data.get("key")
         assert (recovery_password and isinstance(recovery_password, str)) or (
@@ -148,21 +150,21 @@ def delete_using_recovery_password_or_key(subdomain):
     if key:
         with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
             if not hmac.compare_digest(key, f.read()):
-                return "Access denied", 403
+                return '"Access denied"', 403
     if recovery_password:
         if not os.path.exists(
             f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"
         ):
-            return "Access denied", 403
+            return '"Access denied"', 403
         with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password") as f:
             hashed = base64.b64decode(f.read())
 
         if not bcrypt.checkpw(recovery_password.encode(), hashed):
-            return "Access denied", 403
+            return '"Access denied"', 403
 
     if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.key"):
         os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.key")
     if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"):
         os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password")
 
-    return "OK", 200
+    return '"OK"', 200
