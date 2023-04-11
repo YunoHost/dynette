@@ -40,7 +40,7 @@ def _validate_domain(domain):
         len(domain.split(".")) != 3
         or domain.split(".", 1)[-1] not in app.config["DOMAINS"]
     ):
-        return {"error": f"This subdomain is not handled by this dynette server."}, 400
+        return {"error": "This subdomain is not handled by this dynette server."}, 400
 
 
 def _is_available(domain):
@@ -87,7 +87,7 @@ def register(key):
             return {"error": "Key format is invalid"}, 400
 
     try:
-        data = dict(request.form) # get_json(force=True)
+        data = dict(request.form)  # get_json(force=True)
         subdomain = data.get("subdomain")
         assert isinstance(subdomain, str)
     except Exception as e:
@@ -107,7 +107,6 @@ def register(key):
         if len(recovery_password) > 1024:
             return {"error": "Recovery password too long"}, 409
 
-        r_init = recovery_password
         recovery_password = bcrypt.hashpw(
             password=recovery_password.encode(), salt=bcrypt.gensalt(14)
         )
@@ -169,5 +168,49 @@ def delete_using_recovery_password_or_key(subdomain):
         os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.key")
     if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"):
         os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password")
+
+    return '"OK"', 200
+
+
+@app.route("/domains/<subdomain>/recovery_password", methods=["PUT"])
+@limiter.limit("5 per hour")
+def set_recovery_password_using_key(subdomain):
+
+    try:
+        assert isinstance(subdomain, str)
+        data = dict(request.form)  # get_json(force=True)
+        recovery_password = data.get("recovery_password")
+        key = data.get("key")
+        assert (recovery_password and isinstance(recovery_password, str)) and (
+            key and isinstance(key, str)
+        )
+        if key:
+            key = base64.b64decode(key).decode()
+    except Exception:
+        return {"error": "Invalid request"}, 400
+
+    error = _validate_domain(subdomain)
+    if error:
+        return error
+
+    if _is_available(subdomain):
+        return {"error": "Subdomain not registered"}, 404
+
+    with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
+        if not hmac.compare_digest(key, f.read()):
+            return '"Access denied"', 403
+
+    if len(recovery_password) < 8:
+        return {"error": "Recovery password too short"}, 409
+    if len(recovery_password) > 1024:
+        return {"error": "Recovery password too long"}, 409
+
+    recovery_password = bcrypt.hashpw(
+        password=recovery_password.encode(), salt=bcrypt.gensalt(14)
+    )
+    recovery_password = base64.b64encode(recovery_password).decode()
+
+    with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password", "w") as f:
+        f.write(recovery_password)
 
     return '"OK"', 200
