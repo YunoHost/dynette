@@ -151,7 +151,7 @@ def delete_using_recovery_password_or_key(subdomain):
         with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
             if not hmac.compare_digest(key, f.read()):
                 return '"Access denied"', 403
-    if recovery_password:
+    elif recovery_password:
         if not os.path.exists(
             f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"
         ):
@@ -161,6 +161,9 @@ def delete_using_recovery_password_or_key(subdomain):
 
         if not bcrypt.checkpw(recovery_password.encode(), hashed):
             return '"Access denied"', 403
+    # Shouldnt happen, this is checked before
+    else:
+        return '"Access denied"', 403
 
     if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.key"):
         os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.key")
