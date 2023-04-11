@@ -23,7 +23,10 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["50 per hour"],
-    storage_uri="memory://",
+    #storage_uri="memory://",   # <- For development
+    storage_uri="redis://localhost:6379",
+    storage_options={"socket_connect_timeout": 30},
+    strategy="fixed-window", # or "moving-window"
 )
 
 assert os.path.isdir(
