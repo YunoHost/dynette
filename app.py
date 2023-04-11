@@ -129,7 +129,7 @@ def delete_using_recovery_password_or_key(subdomain):
 
     try:
         assert isinstance(subdomain, str)
-        data = dict(request.data)  # get_json(force=True)
+        data = dict(request.form)  # get_json(force=True)
         recovery_password = data.get("recovery_password")
         key = data.get("key")
         assert (recovery_password and isinstance(recovery_password, str)) or (
