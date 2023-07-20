@@ -13,7 +13,7 @@ limits==3.1.6
 MarkupSafe==2.1.2
 ordered-set==4.1.0
 packaging==23.0
-Pygments==2.14.0
+Pygments==2.15.0
 PyYAML==6.0
 redis==4.5.4
 rich==12.6.0
