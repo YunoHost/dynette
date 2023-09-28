@@ -64,7 +64,7 @@ def domains():
 
 
 @app.route("/test/<domain>")
-@limiter.limit("3 per minute")
+@limiter.limit("50 per hour")
 def availability(domain):
 
     error = _validate_domain(domain)
