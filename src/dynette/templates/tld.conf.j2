@@ -3,19 +3,7 @@ zone "{{ tld }}" {
     serial-update-method date;
     file "{{ named_data_dir }}/{{ tld }}.db";
     update-policy {
-        {% for domain in domains %}
-        {% set name = domain[0] %}
-        grant {{ name }}. name {{ name }}. A AAAA TXT MX CAA;
-        grant {{ name }}. name *.{{ name }}. A AAAA;
-        grant {{ name }}. name mail._domainkey.{{ name }}. TXT;
-        grant {{ name }}. name _dmarc.{{ name }}. TXT;
-        grant {{ name }}. name _xmpp-client._tcp.{{ name }}. SRV;
-        grant {{ name }}. name _xmpp-server._tcp.{{ name }}. SRV;
-        grant {{ name }}. name xmpp-upload.{{ name }}. A AAAA CNAME;
-        grant {{ name }}. name muc.{{ name }}. A AAAA CNAME;
-        grant {{ name }}. name vjud.{{ name }}. A AAAA CNAME;
-        grant {{ name }}. name pubsub.{{ name }}. A AAAA CNAME;
-        {% endfor %}
+        grant * selfsub . A AAAA TXT MX CAA CNAME SRV DNAME;
     };
 };
 
