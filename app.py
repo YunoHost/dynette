@@ -55,6 +55,10 @@ def _is_available(domain):
 
     return not os.path.exists(f"{app.config['DB_FOLDER']}/{domain}.key")
 
+def extract_key(key_conf_path):
+    with open(key_conf_path) as f:
+        data = f.read()
+    return re.findall(r'secret "([^"]+)";', data)[0]
 
 @app.route("/")
 @limiter.exempt
@@ -120,8 +124,12 @@ def register(key):
         )
         recovery_password = base64.b64encode(recovery_password).decode()
 
-    with open(f"{app.config['DB_FOLDER']}/{subdomain}.key", "w") as f:
-        f.write(key)
+    with open(f"{app.config['DB_FOLDER']}/{subdomain}.conf", "w") as f:
+        f.write("""key {subdomain}. {{
+       algorithm hmac-sha512;
+       secret "{key}";
+}};
+""")
 
     if recovery_password:
         with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password", "w") as f:
@@ -155,9 +163,8 @@ def delete_using_recovery_password_or_key(subdomain):
         return {"error": "Subdomain already deleted"}, 409
 
     if key:
-        with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
-            if not hmac.compare_digest(key, f.read()):
-                return '"Access denied"', 403
+        if not hmac.compare_digest(key, extract_key(f"{app.config['DB_FOLDER']}/{subdomain}.conf")):
+            return '"Access denied"', 403
     elif recovery_password:
         if not os.path.exists(
             f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"
@@ -172,8 +179,8 @@ def delete_using_recovery_password_or_key(subdomain):
     else:
         return '"Access denied"', 403
 
-    if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.key"):
-        os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.key")
+    if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.conf"):
+        os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.conf")
     if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"):
         os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password")
 
@@ -204,9 +211,8 @@ def set_recovery_password_using_key(subdomain):
     if _is_available(subdomain):
         return {"error": "Subdomain not registered"}, 404
 
-    with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
-        if not hmac.compare_digest(key, f.read()):
-            return '"Access denied"', 403
+    if not hmac.compare_digest(key, extract_key(f"{app.config['DB_FOLDER']}/{subdomain}.conf")):
+        return '"Access denied"', 403
 
     if len(recovery_password) < 8:
         return {"error": "Recovery password too short"}, 409
