@@ -7,10 +7,5 @@ zone "{{ domain.name }}" {
    };
 };
 
-{% for subdomain in domain.subdomains %}
-key {{ subdomain.name }}. {
-       algorithm hmac-sha512;
-       secret "{{ subdomain.key }}";
-};
-{% endfor %}
+include "/etc/bind/keys/*.conf"
 {% endfor %}
