@@ -3,25 +3,9 @@ zone "{{ domain.name }}" {
    type master;
    file "/var/lib/bind/{{ domain.name }}.db";
    update-policy {
-       {% for subdomain in domain.subdomains %}
-       grant {{ subdomain.name }}. name {{ subdomain.name }}. A AAAA TXT MX CAA;
-       grant {{ subdomain.name }}. name *.{{ subdomain.name }}. A AAAA;
-       grant {{ subdomain.name }}. name mail._domainkey.{{ subdomain.name }}. TXT;
-       grant {{ subdomain.name }}. name _dmarc.{{ subdomain.name }}. TXT;
-       grant {{ subdomain.name }}. name _xmpp-client._tcp.{{ subdomain.name }}. SRV;
-       grant {{ subdomain.name }}. name _xmpp-server._tcp.{{ subdomain.name }}. SRV;
-       grant {{ subdomain.name }}. name xmpp-upload.{{ subdomain.name }}. A AAAA CNAME;
-       grant {{ subdomain.name }}. name muc.{{ subdomain.name }}. A AAAA CNAME;
-       grant {{ subdomain.name }}. name vjud.{{ subdomain.name }}. A AAAA CNAME;
-       grant {{ subdomain.name }}. name pubsub.{{ subdomain.name }}. A AAAA CNAME;
-       {% endfor %}
+       grant * selfsub . A AAAA TXT MX CAA CNAME SRV DNAME;
    };
 };
 
-{% for subdomain in domain.subdomains %}
-key {{ subdomain.name }}. {
-       algorithm hmac-sha512;
-       secret "{{ subdomain.key }}";
-};
-{% endfor %}
+include "/etc/bind/keys/*.conf"
 {% endfor %}
