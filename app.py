@@ -10,10 +10,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-
 DOMAIN_REGEX = re.compile(
     r"^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$"
 )
+
+def trusted_ip():
+    # This is for example the CI, or developers testing new developments
+    return request.environ.get("HTTP_X_FORWARDED_HOST") in app.config.get("LIMIT_EXEMPTED_IPS", [])
 
 app = Flask(__name__)
 app.config.from_file("config.yml", load=yaml.safe_load)
@@ -27,6 +30,8 @@ limiter = Limiter(
     storage_uri="redis://localhost:6379",
     storage_options={"socket_connect_timeout": 30},
     strategy="fixed-window", # or "moving-window"
+    application_limits_exempt_when=trusted_ip,
+    default_limits_exempt_when=trusted_ip,
 )
 
 assert os.path.isdir(
@@ -64,7 +69,7 @@ def domains():
 
 
 @app.route("/test/<domain>")
-@limiter.limit("3 per minute")
+@limiter.limit("50 per hour", exempt_when=trusted_ip)
 def availability(domain):
 
     error = _validate_domain(domain)
@@ -78,7 +83,7 @@ def availability(domain):
 
 
 @app.route("/key/<key>", methods=["POST"])
-@limiter.limit("5 per hour")
+@limiter.limit("5 per hour", exempt_when=trusted_ip)
 def register(key):
 
     try:
@@ -126,7 +131,7 @@ def register(key):
 
 
 @app.route("/domains/<subdomain>", methods=["DELETE"])
-@limiter.limit("5 per hour")
+@limiter.limit("5 per hour", exempt_when=trusted_ip)
 def delete_using_recovery_password_or_key(subdomain):
 
     try:
@@ -176,7 +181,7 @@ def delete_using_recovery_password_or_key(subdomain):
 
 
 @app.route("/domains/<subdomain>/recovery_password", methods=["PUT"])
-@limiter.limit("5 per hour")
+@limiter.limit("5 per hour", exempt_when=trusted_ip)
 def set_recovery_password_using_key(subdomain):
 
     try:

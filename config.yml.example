@@ -1,2 +1,3 @@
 DOMAINS: [nohost.me, noho.st, ynh.fr]
 DB_FOLDER: /var/dynette/db/
+LIMIT_EXEMPTED_IPS: []
