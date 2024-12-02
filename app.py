@@ -16,7 +16,11 @@ DOMAIN_REGEX = re.compile(
 
 def trusted_ip():
     # This is for example the CI, or developers testing new developments
-    return request.environ.get("HTTP_X_FORWARDED_HOST") in app.config.get("LIMIT_EXEMPTED_IPS", [])
+    if request.remote_addr in app.config.get("LIMIT_EXEMPTED_IPS", []):
+        return True
+    if request.environ.get("HTTP_X_FORWARDED_HOST") in app.config.get("LIMIT_EXEMPTED_IPS", []):
+        return True
+    return False
 
 app = Flask(__name__)
 app.config.from_file("config.yml", load=yaml.safe_load)
