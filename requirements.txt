@@ -18,6 +18,6 @@ PyYAML==6.0
 redis==4.5.4
 rich==12.6.0
 typing-extensions==4.4.0
-Werkzeug==2.2.3
+Werkzeug==2.3.3
 wrapt==1.14.1
 zipp==3.11.0
