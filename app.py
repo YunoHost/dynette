@@ -19,64 +19,97 @@
 #
 
 import base64
-import os
+import hmac
 import re
-import yaml
-import bcrypt
+from pathlib import Path
 
+import bcrypt
+import yaml
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
+import werkzeug.exceptions as httperr
+
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 DOMAIN_REGEX = re.compile(
     r"^([a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)(\.[a-z0-9]{1}([a-z0-9\-]*[a-z0-9])*)*(\.[a-z]{1}([a-z0-9\-]*[a-z0-9])*)$"
 )
 
-def trusted_ip():
-    # This is for example the CI, or developers testing new developments
-    if request.remote_addr in app.config.get("LIMIT_EXEMPTED_IPS", []):
-        return True
-    if request.environ.get("HTTP_X_FORWARDED_HOST") in app.config.get("LIMIT_EXEMPTED_IPS", []):
-        return True
-    return False
-
 app = Flask(__name__)
-app.config.from_file("config.yml", load=yaml.safe_load)
+app.config.from_file(SCRIPT_DIR / "config.yml", load=yaml.safe_load)
 # cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+DB_FOLDER = Path(app.config["DB_FOLDER"]).resolve()
+assert DB_FOLDER.is_dir(), "You should create the DB folder declared in the config"
+
+
+def trusted_ip() -> bool:
+    # This is for example the CI, or developers testing new developments
+    trusted_ips = app.config.get("LIMIT_EXEMPTED_IPS", [])
+    return (
+        request.remote_addr in trusted_ips
+        or request.environ.get("HTTP_X_FORWARDED_HOST") in trusted_ips
+    )
+
+
 limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["50 per hour"],
-    #storage_uri="memory://",   # <- For development
+    # storage_uri="memory://",   # <- For development
     storage_uri="redis://localhost:6379",
     storage_options={"socket_connect_timeout": 30},
-    strategy="fixed-window", # or "moving-window"
+    strategy="fixed-window",  # or "moving-window"
     application_limits_exempt_when=trusted_ip,
     default_limits_exempt_when=trusted_ip,
 )
 
-assert os.path.isdir(
-    app.config["DB_FOLDER"]
-), "You should create the DB folder declared in the config"
 
-
-def _validate_domain(domain):
+def _validate_subdomain(domain: str | None, should_be_taken: bool) -> None:
+    if not isinstance(domain, str):
+        raise httperr.BadRequest("subdomain was not sent properly")
 
     if not DOMAIN_REGEX.match(domain):
-        return {"error": f"This is not a valid domain: {domain}"}, 400
+        raise httperr.BadRequest(f"This is not a valid domain: {domain}")
 
     if (
         len(domain.split(".")) != 3
         or domain.split(".", 1)[-1] not in app.config["DOMAINS"]
     ):
-        return {"error": "This subdomain is not handled by this dynette server."}, 400
+        raise httperr.BadRequest("This domain is not handled by this dynette server.")
+
+    taken = _is_available(domain)
+    if taken and not should_be_taken:
+        raise httperr.Conflict(f"Subdomain already registered: {domain}")
+    if not taken and should_be_taken:
+        raise httperr.Conflict(f"Subdomain not registered: {domain}")
 
 
-def _is_available(domain):
+def _is_available(domain) -> bool:
+    key_file = DB_FOLDER / f"{domain}.key"
+    return not key_file.exists()
 
-    return not os.path.exists(f"{app.config['DB_FOLDER']}/{domain}.key")
+
+def _decode_key_b64(key_b64: str) -> str:
+    try:
+        key = base64.b64decode(key_b64).decode()
+        if len(key) != 89:
+            raise httperr.BadRequest("Key format is invalid")
+        return key
+    except Exception:
+        raise httperr.BadRequest("Key format is invalid")
+
+
+def _validate_recovery_password(password: str | None) -> None:
+    if not isinstance(password, str):
+        raise httperr.BadRequest("Recovery password was not sent properly")
+    if len(password) < 8:
+        raise httperr.Conflict("Recovery password too short")
+    if len(password) > 1024:
+        raise httperr.Conflict("Recovery password too long")
 
 
 @app.route("/")
@@ -91,157 +124,86 @@ def domains():
     return jsonify(app.config["DOMAINS"]), 200
 
 
-@app.route("/test/<domain>")
+@app.route("/test/<string:domain>")
 @limiter.limit("50 per hour", exempt_when=trusted_ip)
-def availability(domain):
-
-    error = _validate_domain(domain)
-    if error:
-        return error
-
-    if _is_available(domain):
-        return f'"Domain {domain} is available"', 200
-    else:
-        return {"error": f"Subdomain already taken: {domain}"}, 409
+def availability(domain: str):
+    _validate_subdomain(domain, False)
+    return f'"Domain {domain} is available"', 200
 
 
-@app.route("/key/<key>", methods=["POST"])
+@app.route("/key/<string:key>", methods=["POST"])
 @limiter.limit("5 per hour", exempt_when=trusted_ip)
-def register(key):
+def register(key: str):
+    key = _decode_key_b64(key)
+    subdomain = request.form.get("subdomain")
+    password = request.form.get("recovery_password")
+    _validate_subdomain(subdomain, False)
 
-    try:
-        key = base64.b64decode(key).decode()
-    except Exception as e:
-        return {"error": "Key format is invalid"}, 400
-    else:
-        if len(key) != 89:
-            return {"error": "Key format is invalid"}, 400
+    key_file = DB_FOLDER / f"{subdomain}.key"
+    recovery_file = DB_FOLDER / f"{subdomain}.recovery_password"
 
-    try:
-        data = dict(request.form)  # get_json(force=True)
-        subdomain = data.get("subdomain")
-        assert isinstance(subdomain, str)
-    except Exception as e:
-        return {"error": f"Invalid request: {str(request.form)}"}, 400
+    key_file.write_text(key)
 
-    error = _validate_domain(subdomain)
-    if error:
-        return error
-
-    if not _is_available(subdomain):
-        return {"error": f"Subdomain already taken: {subdomain}"}, 409
-
-    recovery_password = data.get("recovery_password")
-    if recovery_password and isinstance(recovery_password, str):
-        if len(recovery_password) < 8:
-            return {"error": "Recovery password too short"}, 409
-        if len(recovery_password) > 1024:
-            return {"error": "Recovery password too long"}, 409
-
-        recovery_password = bcrypt.hashpw(
-            password=recovery_password.encode(), salt=bcrypt.gensalt(14)
-        )
-        recovery_password = base64.b64encode(recovery_password).decode()
-
-    with open(f"{app.config['DB_FOLDER']}/{subdomain}.key", "w") as f:
-        f.write(key)
-
-    if recovery_password:
-        with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password", "w") as f:
-            f.write(recovery_password)
+    if password:
+        _validate_recovery_password(password)
+        pw_hashed = bcrypt.hashpw(password=password.encode(), salt=bcrypt.gensalt(14))
+        pw_hashed_b64 = base64.b64encode(pw_hashed).decode()
+        recovery_file.write_text(pw_hashed_b64)
 
     return '"OK"', 201
 
 
-@app.route("/domains/<subdomain>", methods=["DELETE"])
+@app.route("/domains/<string:subdomain>", methods=["DELETE"])
 @limiter.limit("5 per hour", exempt_when=trusted_ip)
-def delete_using_recovery_password_or_key(subdomain):
+def delete_using_recovery_password_or_key(subdomain: str):
+    _validate_subdomain(subdomain, True)
+    key_b64 = request.form.get("key")
+    recovery_password = request.form.get("recovery_password")
 
-    try:
-        assert isinstance(subdomain, str)
-        data = dict(request.form)  # get_json(force=True)
-        recovery_password = data.get("recovery_password")
-        key = data.get("key")
-        assert (recovery_password and isinstance(recovery_password, str)) or (
-            key and isinstance(key, str)
-        )
-        if key:
-            key = base64.b64decode(key).decode()
-    except Exception:
-        return {"error": "Invalid request"}, 400
+    key_file = DB_FOLDER / f"{subdomain}.key"
+    recovery_file = DB_FOLDER / f"{subdomain}.recovery_password"
 
-    error = _validate_domain(subdomain)
-    if error:
-        return error
+    if key_b64:
+        if not hmac.compare_digest(_decode_key_b64(key_b64), key_file.read_text()):
+            raise httperr.Forbidden("Access denied")
 
-    if _is_available(subdomain):
-        return {"error": "Subdomain already deleted"}, 409
-
-    if key:
-        with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
-            if not hmac.compare_digest(key, f.read()):
-                return '"Access denied"', 403
     elif recovery_password:
-        if not os.path.exists(
-            f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"
-        ):
-            return '"Access denied"', 403
-        with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password") as f:
-            hashed = base64.b64decode(f.read())
-
+        if not recovery_file.exists():
+            raise httperr.Forbidden("Access denied")
+        hashed = base64.b64decode(recovery_file.read_text())
         if not bcrypt.checkpw(recovery_password.encode(), hashed):
-            return '"Access denied"', 403
-    # Shouldnt happen, this is checked before
-    else:
-        return '"Access denied"', 403
+            raise httperr.Forbidden("Access denied")
 
-    if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.key"):
-        os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.key")
-    if os.path.exists(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password"):
-        os.remove(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password")
+    else:
+        raise httperr.Forbidden("key or recovery_password needed")
+
+    if key_file.exists():
+        key_file.unlink()
+    if recovery_file.exists():
+        recovery_file.unlink()
 
     return '"OK"', 200
 
 
-@app.route("/domains/<subdomain>/recovery_password", methods=["PUT"])
+@app.route("/domains/<string:subdomain>/recovery_password", methods=["PUT"])
 @limiter.limit("5 per hour", exempt_when=trusted_ip)
-def set_recovery_password_using_key(subdomain):
+def set_recovery_password_using_key(subdomain: str):
+    _validate_subdomain(subdomain, True)
+    key_b64 = request.form.get("key")
+    recovery_password = request.form.get("recovery_password")
 
-    try:
-        assert isinstance(subdomain, str)
-        data = dict(request.form)  # get_json(force=True)
-        recovery_password = data.get("recovery_password")
-        key = data.get("key")
-        assert (recovery_password and isinstance(recovery_password, str)) and (
-            key and isinstance(key, str)
-        )
-        if key:
-            key = base64.b64decode(key).decode()
-    except Exception:
-        return {"error": "Invalid request"}, 400
+    if not key_b64:
+        raise httperr.BadRequest("key is required.")
+    _validate_recovery_password(recovery_password)
 
-    error = _validate_domain(subdomain)
-    if error:
-        return error
+    key_file = DB_FOLDER / f"{subdomain}.key"
+    recovery_file = DB_FOLDER / f"{subdomain}.recovery_password"
 
-    if _is_available(subdomain):
-        return {"error": "Subdomain not registered"}, 404
+    if not hmac.compare_digest(_decode_key_b64(key_b64), key_file.read_text()):
+        raise httperr.Forbidden("Access denied")
 
-    with open(f"{app.config['DB_FOLDER']}/{subdomain}.key") as f:
-        if not hmac.compare_digest(key, f.read()):
-            return '"Access denied"', 403
-
-    if len(recovery_password) < 8:
-        return {"error": "Recovery password too short"}, 409
-    if len(recovery_password) > 1024:
-        return {"error": "Recovery password too long"}, 409
-
-    recovery_password = bcrypt.hashpw(
-        password=recovery_password.encode(), salt=bcrypt.gensalt(14)
-    )
-    recovery_password = base64.b64encode(recovery_password).decode()
-
-    with open(f"{app.config['DB_FOLDER']}/{subdomain}.recovery_password", "w") as f:
-        f.write(recovery_password)
+    hashed = bcrypt.hashpw(password=recovery_password.encode(), salt=bcrypt.gensalt(14))
+    hashed_b64 = base64.b64encode(hashed).decode()
+    recovery_file.write_text(hashed_b64)
 
     return '"OK"', 200
