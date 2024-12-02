@@ -19,26 +19,40 @@
 #
 
 import os
-import yaml
-import glob
+from pathlib import Path
+
 import jinja2
+import yaml
 
-config = yaml.safe_load(open("config.yml").read())
+SCRIPT_DIR = Path(__file__).resolve().parent
 
-domains = [{"name": domain, "subdomains": []} for domain in config["DOMAINS"]]
+CONFIG = yaml.safe_load((SCRIPT_DIR / "config.yml").read_text())
 
-for infos in domains:
-    domain = infos["name"]
-    for f in glob.glob(config["DB_FOLDER"] + f"*.{domain}.key"):
-        key = open(f).read()
-        subdomain = f.split("/")[-1].rsplit(".", 1)[0]
-        infos["subdomains"].append({"name": subdomain, "key": key})
 
-templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
-templateEnv = jinja2.Environment(loader=templateLoader)
-template = templateEnv.get_template("named.conf.j2")
-named_conf = template.render(domains=domains)
+def subdomains_of(domain: str) -> list[dict[str, str]]:
+    db_folder = Path(CONFIG["DB_FOLDER"]).resolve()
 
-open('/etc/bind/named.conf.local', 'w').write(named_conf)
-os.system('chown -R bind:bind /etc/bind/named.conf.local /var/lib/bind/')
-os.system('/usr/sbin/rndc reload')
+    return [
+        {"name": keyfile.stem, "key": keyfile.read_text()}
+        for keyfile in db_folder.glob(f"*.{domain}.key")
+    ]
+
+
+def main() -> None:
+    domains = [
+        {"name": domain, "subdomains": [subdomains_of(domain)]}
+        for domain in CONFIG["DOMAINS"]
+    ]
+
+    templateLoader = jinja2.FileSystemLoader(searchpath=SCRIPT_DIR / "templates")
+    templateEnv = jinja2.Environment(loader=templateLoader)
+    template = templateEnv.get_template("named.conf.j2")
+    named_conf = template.render(domains=domains)
+
+    Path("/etc/bind/named.conf.local").write_text(named_conf)
+    os.system("chown -R bind:bind /etc/bind/named.conf.local /var/lib/bind/")
+    os.system("/usr/sbin/rndc reload")
+
+
+if __name__ == "__main__":
+    main()
