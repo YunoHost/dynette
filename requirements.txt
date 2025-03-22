@@ -5,7 +5,7 @@ commonmark==0.9.1
 Deprecated==1.2.13
 Flask==2.3.2
 Flask-Limiter==3.5.0
-gunicorn==20.1.0
+gunicorn==23.0.0
 importlib-metadata==6.0.0
 itsdangerous==2.1.2
 Jinja2==3.1.2
