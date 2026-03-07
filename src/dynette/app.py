@@ -15,13 +15,6 @@ from .dynette import Dynette, ForbiddenError
 CONFIG_FILE = Path.cwd() / "config.yml"
 
 
-def trusted_ip() -> bool:
-    # This is for example the CI, or developers testing new developments
-    exempted_ips: list[str] = app.config.get("LIMIT_EXEMPTED_IPS", [])
-    ips = (request.remote_addr, request.environ.get("HTTP_X_FORWARDED_HOST"))
-    return any(ip in exempted_ips for ip in ips)
-
-
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app = Flask(__name__)
     if test_config is None:
@@ -30,7 +23,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         app.config.from_mapping(test_config)
 
     # cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # type: ignore
+
+    def trusted_ip() -> bool:
+        # This is for example the CI, or developers testing new developments
+        exempted_ips: list[str] = app.config.get("LIMIT_EXEMPTED_IPS", [])
+        ips = (request.remote_addr, request.environ.get("HTTP_X_FORWARDED_HOST"))
+        return any(ip in exempted_ips for ip in ips)
+
     limiter = Limiter(
         get_remote_address,
         app=app,
