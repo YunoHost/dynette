@@ -75,7 +75,7 @@ def domains():
 
 
 @app.route("/test/<domain>")
-@limiter.limit("50 per hour", exempt_when=trusted_ip)
+@limiter.limit("5 per hour", exempt_when=trusted_ip)
 def availability(domain):
 
     error = _validate_domain(domain)
