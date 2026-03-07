@@ -22,9 +22,10 @@ dependencies = [
 ]
 
 [dependency-groups]
-lint = [
+test = [
     "ruff",
     "mypy",
+    "pytest",
 ]
 
 [project.scripts]
