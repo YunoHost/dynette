@@ -54,6 +54,7 @@ def domains() -> ResponseReturnValue:
 
 
 @app.route("/test/<string:domain>")
+@app.route("/domains/<string:domain>", methods=["GET"])
 @limiter.limit("5 per hour", exempt_when=trusted_ip)
 def availability(domain: str) -> ResponseReturnValue:
     try:
@@ -67,20 +68,22 @@ def availability(domain: str) -> ResponseReturnValue:
     return f'"Domain {domain} is available"', 200
 
 
-@app.route("/key/<string:key>", methods=["POST"])
+@app.route("/domains/<string:subdomain>", methods=["POST"])
 @limiter.limit("5 per hour", exempt_when=trusted_ip)
-def register(key: str) -> ResponseReturnValue:
+def register(subdomain: str) -> ResponseReturnValue:
     try:
-        subdomain = request.form.get("subdomain")
-        assert isinstance(subdomain, str)
+        data = dict(request.form)
+        recovery_password = request.form.get("recovery_password")
+        key = request.form.get("key")
+        assert isinstance(key, str)
         recovery_password = request.form.get("recovery_password")
     except (ValueError, AssertionError):
-        return {"error": f"Invalid request: {request.form!r}"}, 400
+        return {"error": f"Invalid request: {data}"}, 400
 
     try:
         DYNETTE.validate(subdomain)
         if not DYNETTE.available(subdomain):
-            return {"error": f"Subdomain already taken: {subdomain}"}, 409
+            return {"error": f"domain already taken: {subdomain}"}, 409
         DYNETTE.register(subdomain, key, recovery_password)
 
     except (TypeError, ValueError, AssertionError) as err:
@@ -89,6 +92,22 @@ def register(key: str) -> ResponseReturnValue:
         return '"Access Denied"', 403
 
     return '"OK"', 201
+
+
+@app.route("/key/<string:key>", methods=["POST"])
+@limiter.limit("5 per hour", exempt_when=trusted_ip)
+def register_via_key(key: str) -> ResponseReturnValue:
+    try:
+        subdomain = request.form.get("subdomain")
+        assert isinstance(subdomain, str)
+    except (ValueError, AssertionError):
+        return {"error": f"Invalid request: {request.form!r}"}, 400
+
+    if (pwd := request.form.get("recovery_password")) is not None:
+        request.form["recovery_password"] = pwd
+    request.form["recovery_password"] = key
+
+    return register(subdomain)
 
 
 @app.route("/domains/<string:subdomain>", methods=["DELETE"])
