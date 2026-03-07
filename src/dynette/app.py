@@ -25,7 +25,7 @@ def trusted_ip():
     return False
 
 app = Flask(__name__)
-app.config.from_file("config.yml", load=yaml.safe_load)
+app.config.from_file(os.path.join(os.getcwd(), "config.yml"), load=yaml.safe_load)
 # cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 limiter = Limiter(
