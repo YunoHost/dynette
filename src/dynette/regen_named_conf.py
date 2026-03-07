@@ -8,22 +8,28 @@ import jinja2
 DYNETTE_DIR = os.path.dirname(__file__)
 TEMPLATES_DIR = os.path.join(DYNETTE_DIR, "templates")
 
-config = yaml.safe_load(open("config.yml").read())
 
-domains = [{"name": domain, "subdomains": []} for domain in config["DOMAINS"]]
+def main() -> None:
+    config = yaml.safe_load(open("config.yml").read())
 
-for infos in domains:
-    domain = infos["name"]
-    for f in glob.glob(config["DB_FOLDER"] + f"*.{domain}.key"):
-        key = open(f).read()
-        subdomain = f.split("/")[-1].rsplit(".", 1)[0]
-        infos["subdomains"].append({"name": subdomain, "key": key})
+    domains = [{"name": domain, "subdomains": []} for domain in config["DOMAINS"]]
 
-templateLoader = jinja2.FileSystemLoader(searchpath=TEMPLATES_DIR)
-templateEnv = jinja2.Environment(loader=templateLoader)
-template = templateEnv.get_template("named.conf.j2")
-named_conf = template.render(domains=domains)
+    for infos in domains:
+        domain = infos["name"]
+        for f in glob.glob(config["DB_FOLDER"] + f"*.{domain}.key"):
+            key = open(f).read()
+            subdomain = f.split("/")[-1].rsplit(".", 1)[0]
+            infos["subdomains"].append({"name": subdomain, "key": key})
 
-open('/etc/bind/named.conf.local', 'w').write(named_conf)
-os.system('chown -R bind:bind /etc/bind/named.conf.local /var/lib/bind/')
-os.system('/usr/sbin/rndc reload')
+    templateLoader = jinja2.FileSystemLoader(searchpath=TEMPLATES_DIR)
+    templateEnv = jinja2.Environment(loader=templateLoader)
+    template = templateEnv.get_template("named.conf.j2")
+    named_conf = template.render(domains=domains)
+
+    open('/etc/bind/named.conf.local', 'w').write(named_conf)
+    os.system('chown -R bind:bind /etc/bind/named.conf.local /var/lib/bind/')
+    os.system('/usr/sbin/rndc reload')
+
+
+if __name__ == "__main__":
+    main()
