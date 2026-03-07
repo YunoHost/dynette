@@ -25,7 +25,6 @@ class Dynette:
     def _domain_pwd(self, domain: str) -> Path:
         return self.db_path / f"{domain}.recovery_password"
 
-
     def _check_key(self, domain: str, key64: str) -> None:
         try:
             key = base64.b64decode(key64).decode()
@@ -62,7 +61,9 @@ class Dynette:
         if pwd:
             self.set_password(domain, "", pwd, check=False)
 
-    def set_password(self, domain: str, key64: str, pwd: str, check: bool = True) -> None:
+    def set_password(
+        self, domain: str, key64: str, pwd: str, check: bool = True
+    ) -> None:
         if 8 > len(pwd) > 1024:
             raise ValueError("Password should be between 8 and 1024 long")
         if check:

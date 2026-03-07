@@ -53,12 +53,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     def home() -> ResponseReturnValue:
         return "Wanna play the dynette?"
 
-
     @app.route("/domains")
     @limiter.exempt
     def domains() -> ResponseReturnValue:
         return jsonify(app.config["DOMAINS"]), 200
-
 
     @app.route("/test/<string:domain>")
     @app.route("/domains/<string:domain>", methods=["GET"])
@@ -73,7 +71,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return {"error": f"Subdomain already taken: {domain}"}, 409
 
         return f'"Domain {domain} is available"', 200
-
 
     @app.route("/domains/<string:subdomain>", methods=["POST"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
@@ -100,7 +97,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
         return '"OK"', 201
 
-
     @app.route("/key/<string:key>", methods=["POST"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
     def register_via_key(key: str) -> ResponseReturnValue:
@@ -116,7 +112,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
         return register(subdomain)
 
-
     @app.route("/domains/<string:subdomain>", methods=["DELETE"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
     def delete_using_recovery_password_or_key(subdomain: str) -> ResponseReturnValue:
@@ -124,7 +119,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             recovery_password = request.form.get("recovery_password")
             key = request.form.get("key")
             assert any(
-                string and isinstance(string, str) for string in (key, recovery_password)
+                string and isinstance(string, str)
+                for string in (key, recovery_password)
             )
         except (ValueError, AssertionError):
             return {"error": "Invalid request"}, 400
@@ -141,7 +137,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return '"Access Denied"', 403
 
         return '"OK"', 200
-
 
     @app.route("/domains/<string:subdomain>/recovery_password", methods=["PUT"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
