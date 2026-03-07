@@ -43,3 +43,6 @@ lint = [
 
 [project.scripts]
 regen_named_conf = "dynette.regen_named_conf:main"
+
+[tool.uv]
+package = true
