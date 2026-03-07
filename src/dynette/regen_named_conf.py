@@ -5,6 +5,9 @@ import yaml
 import glob
 import jinja2
 
+DYNETTE_DIR = os.path.dirname(__file__)
+TEMPLATES_DIR = os.path.join(DYNETTE_DIR, "templates")
+
 config = yaml.safe_load(open("config.yml").read())
 
 domains = [{"name": domain, "subdomains": []} for domain in config["DOMAINS"]]
@@ -16,7 +19,7 @@ for infos in domains:
         subdomain = f.split("/")[-1].rsplit(".", 1)[0]
         infos["subdomains"].append({"name": subdomain, "key": key})
 
-templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
+templateLoader = jinja2.FileSystemLoader(searchpath=TEMPLATES_DIR)
 templateEnv = jinja2.Environment(loader=templateLoader)
 template = templateEnv.get_template("named.conf.j2")
 named_conf = template.render(domains=domains)
