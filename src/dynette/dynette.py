@@ -67,7 +67,7 @@ class Dynette:
 
     def register(self, domain: str, key64: str, pwd: Optional[str]) -> None:
         key = self._decode_key(key64)
-        self._domain_key(domain).write_text(key)
+        self._domain_key(domain).write_text(key64)
         if pwd:
             self.set_password(domain, "", pwd, check=False)
 
