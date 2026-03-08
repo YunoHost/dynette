@@ -48,7 +48,7 @@ class DynetteClient:
     def chpwd(self, domain: str, key: str | None, password: str | None) -> None:
         response = requests.put(
             f"{self.server}/domains/{domain}/recovery_password",
-            data=self._data(key, password)
+            data=self._data(key, password),
         )
         self._raise_err(response)
 
