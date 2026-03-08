@@ -183,3 +183,9 @@ class Dynette:
         cur = self.db.execute(query)
         yield from cur
         cur.close()
+
+    def iter_last_queries(self) -> Generator[tuple[str, int]]:
+        query = "select name, last_query from domains order by name"
+        cur = self.db.execute(query)
+        yield from cur
+        cur.close()
