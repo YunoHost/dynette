@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import base64
+import contextlib
 import json
+import os
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
@@ -13,12 +15,28 @@ from flask.testing import FlaskClient, FlaskCliRunner
 from dynette.app import create_app
 
 
+@contextlib.contextmanager
+def working_directory(path: Path) -> Generator:
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
+
+
 @pytest.fixture()
 def app() -> Generator[Flask, None, None]:
-    with tempfile.TemporaryDirectory() as tempdir_str:
-        tempdir = Path(tempdir_str)
+    with (
+        tempfile.TemporaryDirectory() as tempdir_str,
+        working_directory(tempdir := Path(tempdir_str)),
+    ):
+        (tempdir / "config.yml").touch()
         app = create_app(
             {
+                "DOMAINS": ["test.tld"],
+                "LIMIT_EXEMPTED_IPS": [],
                 "TESTING": True,
                 "DB_FOLDER": tempdir,
             }
@@ -63,7 +81,7 @@ def test_list(client: FlaskClient) -> None:
 
 
 def test_available(client: FlaskClient) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     response = client.get(f"/test/{domain}")
     responseother = client.get(f"/domains/{domain}")
     assert response.data == responseother.data
@@ -83,7 +101,7 @@ INVALID_KEYS: list[str] = [
 
 @pytest.mark.parametrize("key", INVALID_KEYS)
 def test_invalid_key(client: FlaskClient, key: str) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     response = client.post(f"/domains/{domain}", data={"key": key})
     assert response.status_code == 400, response.json
     data = response.json
@@ -92,19 +110,19 @@ def test_invalid_key(client: FlaskClient, key: str) -> None:
 
 
 def test_register1(client: FlaskClient, valid_key: str) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     response = client.post(f"/domains/{domain}", data={"key": valid_key})
     assert response.status_code == 201, response.json
 
 
 def test_register2(client: FlaskClient, valid_key: str) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     response = client.post(f"/key/{valid_key}", data={"subdomain": domain})
     assert response.status_code == 201, response.json
 
 
 def test_register_makes_unavailable(client: FlaskClient, valid_key: str) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     assert client.get(f"/domains/{domain}").status_code == 200
 
     response = client.post(f"/key/{valid_key}", data={"subdomain": domain})
@@ -119,7 +137,7 @@ def test_register_makes_unavailable(client: FlaskClient, valid_key: str) -> None
 
 
 def test_wrong_key(client: FlaskClient, valid_key: str, valid_key_2: str) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     response = client.post(f"/key/{valid_key}", data={"subdomain": domain})
     assert response.status_code == 201, response.json
 
@@ -135,7 +153,7 @@ def test_wrong_key(client: FlaskClient, valid_key: str, valid_key_2: str) -> Non
 
 
 def test_password(client: FlaskClient, valid_key: str) -> None:
-    domain = "anydomain.ynh.fr"
+    domain = "anydomain.test.tld"
     password = "some password with 'special & chars'"
     response = client.post(
         f"/key/{valid_key}", data={"subdomain": domain, "recovery_password": password}
