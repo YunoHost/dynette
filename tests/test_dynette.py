@@ -27,7 +27,7 @@ def working_directory(path: Path) -> Generator:
 
 
 @pytest.fixture()
-def app() -> Generator[Flask, None, None]:
+def app() -> Generator[Flask]:
     with (
         tempfile.TemporaryDirectory() as tempdir_str,
         working_directory(tempdir := Path(tempdir_str)),

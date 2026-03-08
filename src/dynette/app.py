@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from flask import Flask, Response, jsonify, make_response, request
@@ -14,7 +14,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from .dynette import Dynette, ForbiddenError
 
 
-def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     config_file = Path.cwd() / "config.yml"
     app = Flask(__name__)
     app.config.from_file(str(config_file), load=yaml.safe_load)
@@ -81,7 +81,7 @@ def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
         return f'"Domain {domain} is available"', 200
 
     def _register(
-        subdomain: Optional[str], key: Optional[str], pwd: Optional[str]
+        subdomain: str | None, key: str | None, pwd: str | None
     ) -> ResponseReturnValue:
         if not (
             isinstance(subdomain, str)
