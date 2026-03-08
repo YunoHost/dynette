@@ -151,7 +151,9 @@ def test_wrong_key(client: FlaskClient, valid_key: str, valid_key_2: str) -> Non
     response = client.put(f"/domains/{domain}/recovery_password", data=data)
     assert response.status_code == 403, response.json
 
-    response = client.delete(f"/domains/{domain}", data={"key": format_key(valid_key_2)})
+    response = client.delete(
+        f"/domains/{domain}", data={"key": format_key(valid_key_2)}
+    )
     assert response.status_code == 403, response.json
 
     response = client.delete(f"/domains/{domain}", data={"key": format_key(valid_key)})
@@ -162,7 +164,8 @@ def test_password(client: FlaskClient, valid_key: str) -> None:
     domain = "anydomain.test.tld"
     password = "some password with 'special & chars'"
     response = client.post(
-        f"/key/{format_key(valid_key)}", data={"subdomain": domain, "recovery_password": password}
+        f"/key/{format_key(valid_key)}",
+        data={"subdomain": domain, "recovery_password": password},
     )
     assert response.status_code == 201, response.json
 
