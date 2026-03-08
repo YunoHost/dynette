@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, make_response, request
 from flask.typing import ResponseReturnValue
-from flask_limiter import Limiter
+from flask_limiter import Limiter, RequestLimit
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -30,6 +30,9 @@ def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
         ips = (request.remote_addr, request.environ.get("HTTP_X_FORWARDED_HOST"))
         return any(ip in exempted_ips for ip in ips)
 
+    def limiter_api_response(request_limit: RequestLimit) -> Response:
+        return make_response(jsonify({"error": "Too Many Requests"}), 429)
+
     limiter = Limiter(
         get_remote_address,
         app=app,
@@ -43,6 +46,7 @@ def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
         strategy="fixed-window",  # or "moving-window"
         application_limits_exempt_when=trusted_ip,
         default_limits_exempt_when=trusted_ip,
+        on_breach=limiter_api_response,
     )
 
     db_folder = Path(app.config["DB_FOLDER"]).resolve()
