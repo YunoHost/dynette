@@ -3,6 +3,17 @@ on:
   push:
     branches:
     - main
-  pull_requests:
+  pull_request:
 
 jobs:
+   pytest:
+    name: Run Pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: 3.9
+
+      - name: Run tests
+        run: uv run --group test pytest
