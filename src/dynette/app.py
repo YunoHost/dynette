@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -17,10 +18,9 @@ CONFIG_FILE = Path.cwd() / "config.yml"
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app = Flask(__name__)
-    if test_config is None:
-        app.config.from_file(str(CONFIG_FILE), load=yaml.safe_load)
-    else:
-        app.config.from_mapping(test_config)
+    app.config.from_file(str(CONFIG_FILE), load=yaml.safe_load)
+    if test_config is not None:
+        app.config.update(test_config)
 
     # cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # type: ignore
@@ -35,8 +35,11 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         get_remote_address,
         app=app,
         default_limits=["50 per hour"],
-        # storage_uri="memory://",   # <- For development
-        storage_uri="redis://localhost:6379",
+        storage_uri=(
+            "memory://"  # <- For development
+            if app.config.get("TESTING")
+            else "redis://localhost:6379"
+        ),
         storage_options={"socket_connect_timeout": 30},
         strategy="fixed-window",  # or "moving-window"
         application_limits_exempt_when=trusted_ip,
@@ -47,6 +50,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     assert db_folder.is_dir(), "You should create the DB folder declared in the config"
 
     dynette = Dynette(db_folder, app.config["DOMAINS"])
+    if app.config.get("TESTING"):
+        dynette.log.setLevel(logging.DEBUG)
+
 
     @app.route("/")
     @limiter.exempt
