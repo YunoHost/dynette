@@ -22,39 +22,41 @@ class DynetteClient:
     def _data(self, key: str | None, password: str | None) -> dict[str, str]:
         data = {}
         if key:
-            # Mimic what's done in yunohost
-            key64 = base64.b64encode(key.encode()).decode()
-            secret = f"{key64[:56]} {key64[56:]}"
-            data["key"] = base64.b64encode(secret.encode()).decode()
+            data["key"] = base64.b64encode(key.encode()).decode()
         if password:
             data["recovery_password"] = password
         return data
 
     def tlds(self) -> list[str]:
-        response = requests.get(f"{self.server}/domains")
+        response = requests.get(f"{self.server}/domains", verify=False)
         response.raise_for_status()
         return response.json()
 
     def available(self, domain: str) -> bool:
-        response = requests.get(f"{self.server}/domains/{domain}")
+        response = requests.get(f"{self.server}/domains/{domain}", verify=False)
         return response.status_code == 200
 
     def register(self, domain: str, key: str | None, password: str | None) -> None:
         assert key is not None
         assert len(key) == 64
         data = self._data(key, password)
-        response = requests.post(f"{self.server}/domains/{domain}", data=data)
+        response = requests.post(
+            f"{self.server}/domains/{domain}?", data=data, verify=False
+        )
         self._raise_err(response)
 
     def unregister(self, domain: str, key: str | None, password: str | None) -> None:
         data = self._data(key, password)
-        response = requests.delete(f"{self.server}/domains/{domain}", data=data)
+        response = requests.delete(
+            f"{self.server}/domains/{domain}", data=data, verify=False
+        )
         self._raise_err(response)
 
     def chpwd(self, domain: str, key: str | None, password: str | None) -> None:
         response = requests.put(
             f"{self.server}/domains/{domain}/recovery_password",
             data=self._data(key, password),
+            verify=False,
         )
         self._raise_err(response)
 
