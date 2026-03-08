@@ -1,5 +1,6 @@
 import base64
 import hmac
+import logging
 import re
 from pathlib import Path
 
@@ -16,8 +17,10 @@ class ForbiddenError(Exception):
 
 class Dynette:
     def __init__(self, db_path: Path, tlds: list[str]) -> None:
+        self.log = logging.getLogger("Dynette")
         self.db_path = db_path
         self.tlds = tlds
+        self.log.debug("Initializing Dynette at %s for %s", db_path, tlds)
 
     def _domain_key(self, domain: str) -> Path:
         return self.db_path / f"{domain}.key"
@@ -29,8 +32,10 @@ class Dynette:
         try:
             key = base64.b64decode(key64).decode()
         except (ValueError, TypeError) as err:
+            self.log.debug("Key format is invalid: %s", err)
             raise ValueError("Key format is invalid") from None
         if len(key) != 89:
+            self.log.debug("Key is %d long instead of 89", len(key))
             raise ValueError("Key should be 89 chars long")
         return key
 
