@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import base64
 import logging
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,34 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     if app.config.get("TESTING"):
         dynette.log.setLevel(logging.DEBUG)
 
+
+    def _decode_key(key64: str) -> bytes:
+        """
+        Key can be provided either as:
+        - 64 bytes, base64-ed (length = 88)
+        - the same, but splitted with a space at char 56, base64-ed again
+          (length = 120)
+        New version of the API will expect the first, simpler format.
+        But named expects the second format that this function returns.
+        """
+        try:
+            key: bytes = base64.b64decode(key64)
+        except (ValueError, TypeError):
+            raise ValueError("Key format is invalid") from None
+
+        if len(key) == 89:
+            # Support legacy format that formatted the key with the space
+            # in the yunohost source code
+            keystr = key.decode().replace(" ", "")
+            try:
+                key = base64.b64decode(keystr)
+            except (ValueError, TypeError):
+                raise ValueError("Key format is invalid") from None
+
+        if len(key) != 64:
+            raise ValueError("Key should be 64 bytes long")
+        return key
+
     @app.route("/")
     @limiter.exempt
     def home() -> ResponseReturnValue:
@@ -81,11 +110,11 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         return f'"Domain {domain} is available"', 200
 
     def _register(
-        subdomain: str | None, key: str | None, pwd: str | None
+        subdomain: str | None, keystr: str | None, pwd: str | None
     ) -> ResponseReturnValue:
         if not (
             isinstance(subdomain, str)
-            and isinstance(key, str)
+            and isinstance(keystr, str)
             and (isinstance(pwd, str) or pwd is None)
         ):
             return {"error": f"Invalid request: {dict(request.form)}"}, 400
@@ -94,7 +123,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             dynette.validate(subdomain)
             if not dynette.available(subdomain):
                 return {"error": f"domain already taken: {subdomain}"}, 409
-            dynette.register(subdomain, key, pwd)
+            dynette.register(subdomain, _decode_key(keystr), pwd)
         except (TypeError, ValueError) as err:
             return {"error": str(err)}, 400
         except ForbiddenError:
@@ -104,24 +133,25 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.route("/domains/<string:subdomain>", methods=["POST"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
     def register(subdomain: str) -> ResponseReturnValue:
-        key = request.form.get("key")
+        keystr = request.form.get("key")
         recovery_password = request.form.get("recovery_password")
-        return _register(subdomain, key, recovery_password)
+        return _register(subdomain, keystr, recovery_password)
 
-    @app.route("/key/<string:key>", methods=["POST"])
+    @app.route("/key/<string:keystr>", methods=["POST"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
-    def register_via_key(key: str) -> ResponseReturnValue:
+    def register_via_key(keystr: str) -> ResponseReturnValue:
         subdomain = request.form.get("subdomain")
         recovery_password = request.form.get("recovery_password")
-        return _register(subdomain, key, recovery_password)
+        return _register(subdomain, keystr, recovery_password)
 
     @app.route("/domains/<string:subdomain>", methods=["DELETE"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
     def delete_using_recovery_password_or_key(subdomain: str) -> ResponseReturnValue:
-        key = request.form.get("key")
+        keystr = request.form.get("key")
         recovery_password = request.form.get("recovery_password")
-        if not (isinstance(key, str) or isinstance(recovery_password, str)):
+        if not (isinstance(keystr, str) or isinstance(recovery_password, str)):
             return {"error": f"Invalid request: {dict(request.form)}"}, 400
+        key = _decode_key(keystr) if keystr else None
 
         try:
             dynette.validate(subdomain)
@@ -139,16 +169,16 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.route("/domains/<string:subdomain>/recovery_password", methods=["PUT"])
     @limiter.limit("5 per hour", exempt_when=trusted_ip)
     def set_recovery_password_using_key(subdomain: str) -> ResponseReturnValue:
-        key = request.form.get("key")
+        keystr = request.form.get("key")
         recovery_password = request.form.get("recovery_password")
-        if not (isinstance(key, str) and isinstance(recovery_password, str)):
+        if not (isinstance(keystr, str) and isinstance(recovery_password, str)):
             return {"error": f"Invalid request: {dict(request.form)}"}, 400
 
         try:
             dynette.validate(subdomain)
             if dynette.available(subdomain):
                 return {"error": "Subdomain not registered"}, 404
-            dynette.set_password(subdomain, key, recovery_password)
+            dynette.set_password(subdomain, _decode_key(keystr), recovery_password)
 
         except (TypeError, ValueError) as err:
             return {"error": str(err)}, 400
