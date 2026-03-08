@@ -13,12 +13,11 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .dynette import Dynette, ForbiddenError
 
-CONFIG_FILE = Path.cwd() / "config.yml"
-
 
 def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
+    config_file = Path.cwd() / "config.yml"
     app = Flask(__name__)
-    app.config.from_file(str(CONFIG_FILE), load=yaml.safe_load)
+    app.config.from_file(str(config_file), load=yaml.safe_load)
     if test_config is not None:
         app.config.update(test_config)
 
