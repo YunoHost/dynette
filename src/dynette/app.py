@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 from flask import Flask, jsonify, request
@@ -16,7 +16,7 @@ from .dynette import Dynette, ForbiddenError
 CONFIG_FILE = Path.cwd() / "config.yml"
 
 
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
     app = Flask(__name__)
     app.config.from_file(str(CONFIG_FILE), load=yaml.safe_load)
     if test_config is not None:
@@ -53,7 +53,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     if app.config.get("TESTING"):
         dynette.log.setLevel(logging.DEBUG)
 
-
     @app.route("/")
     @limiter.exempt
     def home() -> ResponseReturnValue:
@@ -79,12 +78,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         return f'"Domain {domain} is available"', 200
 
     def _register(
-        subdomain: str | None, key: str | None, pwd: str | None
+        subdomain: Optional[str], key: Optional[str], pwd: Optional[str]
     ) -> ResponseReturnValue:
         if not (
             isinstance(subdomain, str)
             and isinstance(key, str)
-            and isinstance(pwd, str | None)
+            and (isinstance(pwd, str) or pwd is None)
         ):
             return {"error": f"Invalid request: {dict(request.form)}"}, 400
 
