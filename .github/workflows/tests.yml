@@ -1,0 +1,8 @@
+name: Run code tests
+on:
+  push:
+    branches:
+    - main
+  pull_requests:
+
+jobs:
