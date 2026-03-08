@@ -21,7 +21,10 @@ class DynetteClient:
     def _data(self, key: str | None, password: str | None) -> dict[str, str]:
         data = {}
         if key:
-            data["key"] = base64.b64encode(key.encode())
+            # Mimic what's done in yunohost
+            key64 = base64.b64encode(key.encode()).decode()
+            secret = f"{key64[:56]} {key64[56:]}"
+            data["key"] = base64.b64encode(secret.encode()).decode()
         if password:
             data["recovery_password"] = password
         return data
@@ -36,6 +39,8 @@ class DynetteClient:
         return response.status_code == 200
 
     def register(self, domain: str, key: str | None, password: str | None) -> None:
+        assert key is not None
+        assert len(key) == 64
         data = self._data(key, password)
         response = requests.post(f"{self.server}/domains/{domain}", data=data)
         self._raise_err(response)
