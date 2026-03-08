@@ -65,7 +65,7 @@ class Dynette:
     def available(self, domain: str) -> bool:
         return not self._domain_key(domain).exists()
 
-    def register(self, domain: str, key64: str, pwd: Optional[str]) -> None:
+    def register(self, domain: str, key64: str, pwd: str | None) -> None:
         key = self._decode_key(key64)
         self._domain_key(domain).write_text(key)
         if pwd:
@@ -82,7 +82,7 @@ class Dynette:
         encoded = base64.b64encode(hashed).decode()
         self._domain_pwd(domain).write_text(encoded)
 
-    def delete(self, domain: str, key64: Optional[str], pwd: Optional[str]) -> None:
+    def delete(self, domain: str, key64: str | None, pwd: str | None) -> None:
         if key64:
             self._check_key(domain, self._decode_key(key64))
         elif pwd:

@@ -9,7 +9,7 @@ authors = [
 ]
 urls.Repository = "https://github.com/yunohost/dynette"
 
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 dependencies = [
     "bcrypt~=5.0",
     "Flask~=3.0",
