@@ -36,7 +36,7 @@ class Dynette:
             return
         schema = "name text not null unique, key blob not null, password text"
         query = f"create table domains({schema})"
-        cur.execute(schema)
+        cur.execute(query)
         query = "pragma user_version = 1"
         cur.execute(query)
         cur.close()
