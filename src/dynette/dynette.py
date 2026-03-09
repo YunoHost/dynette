@@ -47,6 +47,7 @@ class Dynette:
         cur = self.db.execute(query, (domain,))
         assert isinstance(cur, sqlite3.Cursor)
         result = cur.fetchone()
+        cur.close()
         if result is None:
             return None
         return (result[0], result[1])
@@ -119,6 +120,7 @@ class Dynette:
         )
         query = "update domains set password = ? where name = ?"
         cur = self.db.execute(query, (hashed, domain))
+        cur.close()
         if cur.rowcount == 0:
             raise ValueError(f"Can't update password for non-existing domain {domain}")
         if commit:
@@ -136,8 +138,10 @@ class Dynette:
             raise ForbiddenError(f"No key or password passed for {domain}")
 
         query = "delete from domains where name = ?"
-        self.db.execute(query, (domain,))
+        self.db.execute(query, (domain,)).close()
 
     def iter(self) -> Generator[tuple[str, bytes, str | None]]:
         query = "select name, key, password from domains order by name"
-        yield from self.db.execute(query)
+        cur = self.db.execute(query)
+        yield from cur
+        cur.close()
