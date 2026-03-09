@@ -15,7 +15,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from .dynette import Dynette, ForbiddenError
 
 
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+def create_app(
+    test_config: dict[str, Any] | None = None, logger: logging.Logger | None = None
+) -> Flask:
     config_file = Path.cwd() / "config.yml"
     app = Flask(__name__)
     app.config.from_file(str(config_file), load=yaml.safe_load)
@@ -52,10 +54,16 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     db_path = Path(app.config["DB_PATH"]).resolve()
     dynette = Dynette(db_path, app.config["DOMAINS"])
+
+    if logger is not None:
+        print(f"using logger handlers {logger.handlers} at level {logger.level}")
+        app.logger.handlers = logger.handlers
+        app.logger.setLevel(logger.level)
+        dynette.log.handlers = logger.handlers
+        dynette.log.setLevel(logger.level)
+
     if app.config.get("TESTING"):
         dynette.log.setLevel(logging.DEBUG)
-    else:
-        dynette.log.setLevel(logging.INFO)
 
     def _decode_key(key64: str) -> bytes:
         """
