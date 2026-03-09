@@ -139,6 +139,7 @@ class Dynette:
 
         query = "delete from domains where name = ?"
         self.db.execute(query, (domain,)).close()
+        self.db.commit()
 
     def iter(self) -> Generator[tuple[str, bytes, str | None]]:
         query = "select name, key, password from domains order by name"
