@@ -33,6 +33,7 @@ class Dynette:
         current_version = next(cur.execute(query))[0]
         if current_version == 1:
             return
+        self.log.info("Creating database...")
         schema = "name text not null unique, key blob not null, password text"
         query = f"create table domains({schema})"
         cur.execute(query)
@@ -84,6 +85,7 @@ class Dynette:
     def register(
         self, domain: str, key: bytes | str, pwd: str | None, commit: bool = True
     ) -> None:
+        self.log.info("Registering %s", domain)
         query = "insert into domains values(?, ?, ?)"
         key = key.encode() if isinstance(key, str) else key
         try:
@@ -104,6 +106,7 @@ class Dynette:
         is_hashed: bool = False,
         commit: bool = True,
     ) -> None:
+        self.log.debug("Setting password %s for %s", pwd, domain)
         key = key.encode() if isinstance(key, str) else key
         if 8 > len(pwd) > 1024:
             raise ValueError("Password should be between 8 and 1024 long")
@@ -122,6 +125,7 @@ class Dynette:
             self.db.commit()
 
     def delete(self, domain: str, key: bytes | str | None, pwd: str | None) -> None:
+        self.log.info("Deleting %s", domain)
         key = key.encode() if isinstance(key, str) else key
         if key:
             self._check_key(domain, key)
