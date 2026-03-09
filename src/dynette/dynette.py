@@ -34,10 +34,8 @@ class Dynette:
         current_version = next(cur.execute(query))[0]
         if current_version == 1:
             return
-        # query = """select count(name) from sqlite_master where type='table' and name='domains'"""
-        # if cur.execute(query).fetchone()[0] == 1
-        #     print("Table exists.")
-        schema = "create table domains(name text not null unique, key blob not null, password text)"
+        schema = "name text not null unique, key blob not null, password text"
+        query = f"create table domains({schema})"
         cur.execute(schema)
         query = "pragma user_version = 1"
         cur.execute(query)
