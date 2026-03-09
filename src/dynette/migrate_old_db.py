@@ -19,8 +19,9 @@ def main() -> None:
     db_folder = Path(config["DB_FOLDER"])
     dynette = Dynette(args.output, config["DOMAINS"])
 
-    for keyfile in db_folder.glob("*.key"):
+    for item, keyfile in enumerate(db_folder.glob("*.key")):
         domain = keyfile.name.removesuffix(".key")
+        print(f"{item}\t{domain}\r", end="")
         dynette.validate(domain)
         passwordfile = db_folder / f"{domain}.recovery_password"
         key = base64.b64decode(keyfile.read_text().replace(" ", ""))
