@@ -17,10 +17,9 @@ class ForbiddenError(Exception):
 
 
 class Dynette:
-    def __init__(self, db_folder: Path, tlds: list[str]) -> None:
+    def __init__(self, db_path: Path, tlds: list[str]) -> None:
         self.log = logging.getLogger("Dynette")
-        self.db_folder = db_folder
-        self.db_path = self.db_folder / "domains.sql"
+        self.db_path = db_path
         self.tlds = tlds
         self.log.debug(
             "Initializing Dynette at %s for domains: %s", self.db_path, ", ".join(tlds)

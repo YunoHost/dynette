@@ -53,7 +53,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     db_folder = Path(app.config["DB_FOLDER"]).resolve()
     assert db_folder.is_dir(), "You should create the DB folder declared in the config"
 
-    dynette = Dynette(db_folder, app.config["DOMAINS"])
+    db_path = db_folder / "domains.sql"
+    dynette = Dynette(db_path, app.config["DOMAINS"])
     if app.config.get("TESTING"):
         dynette.log.setLevel(logging.DEBUG)
 

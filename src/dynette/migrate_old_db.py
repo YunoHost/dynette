@@ -17,7 +17,7 @@ def main() -> None:
 
     config = yaml.safe_load(args.config.open())
     db_folder = Path(config["DB_FOLDER"])
-    dynette = Dynette(db_folder, config["DOMAINS"])
+    dynette = Dynette(args.output, config["DOMAINS"])
 
     for keyfile in db_folder.glob("*.key"):
         domain = keyfile.name.removesuffix(".key")

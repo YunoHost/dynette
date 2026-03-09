@@ -51,7 +51,7 @@ def main() -> None:
 
     config = yaml.safe_load(args.config.open())
     db_folder = Path(config["DB_FOLDER"])
-    dynette = Dynette(db_folder, config["DOMAINS"])
+    dynette = Dynette(db_folder / "domains.sql", config["DOMAINS"])
 
     generate_named_conf(dynette, args.output)
 
