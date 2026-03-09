@@ -37,8 +37,8 @@ class Dynette:
         return key64[:56] + " " + key64[56:]
 
     def _check_key(self, domain: str, key: bytes) -> None:
-        keyfile = self._domain_key(domain)
-        if not hmac.compare_digest(self._encode_key(key), keyfile.read_text()):
+        realkey = self._domain_key(domain).read_text()
+        if not hmac.compare_digest(self._encode_key(key), realkey):
             raise ForbiddenError(f"Invalid key for {domain}")
 
     def _check_pwd(self, domain: str, pwd: str) -> None:
