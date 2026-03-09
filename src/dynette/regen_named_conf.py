@@ -24,15 +24,15 @@ class Bind9Config:
         template = self.template_environ.get_template("named.conf.local.j2")
         output.write_text(template.render(named_conf_dir=self.named_conf_dir))
 
-    def gen_zone_conf(self, tld: str, domain: str, key: bytes) -> None:
-        output = self.named_conf_dir / "domains" / tld / f"{domain}.conf"
+    def gen_tld_conf(self, tld: str, domains: list[tuple[str, bytes]]) -> None:
+        output = self.named_conf_dir / "domains" / f"{tld}.conf"
         output.parent.mkdir(exist_ok=True)
-        template = self.template_environ.get_template("zone.conf.j2")
+        template = self.template_environ.get_template("tld.conf.j2")
         output.write_text(
             template.render(
                 tld=tld,
-                domain=domain,
-                key=self.encode_key(key),
+                domains=domains,
+                # key=self.encode_key(key),
                 named_data_dir=self.named_data_dir,
             )
         )
@@ -87,12 +87,11 @@ def main() -> None:
     generator = Bind9Config(args.bind_conf_dir, args.bind_data_dir)
     generator.gen_named_conf()
 
-    for domain, key, _ in dynette.iter():
-        tld = next((tld for tld in dynette.tlds if domain.endswith(f".{tld}")), None)
-        if tld is None:
-            raise RuntimeError(f"Unknown domain {domain}, no tld matches!")
-        generator.gen_zone_conf(tld, domain, key)
-        generator.gen_zone_db(tld, domain)
+    for tld in config["DOMAINS"]:
+        domains = [(domain, key) for domain, key, _ in dynette.iter(tld)]
+        generator.gen_tld_conf(tld, domains)
+        for domain, _ in domains:
+            generator.gen_zone_db(tld, domain)
 
     if args.reload:
         subprocess.check_call(

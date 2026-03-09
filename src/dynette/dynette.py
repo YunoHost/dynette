@@ -141,8 +141,9 @@ class Dynette:
         self.db.execute(query, (domain,)).close()
         self.db.commit()
 
-    def iter(self) -> Generator[tuple[str, bytes, str | None]]:
-        query = "select name, key, password from domains order by name"
+    def iter(self, tld: str | None = None) -> Generator[tuple[str, bytes, str | None]]:
+        tldwhere = f"where name like '%.{tld}'" if tld else ""
+        query = f"select name, key, password from domains {tldwhere} order by name"
         cur = self.db.execute(query)
         yield from cur
         cur.close()
