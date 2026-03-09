@@ -34,7 +34,6 @@ def generate_named_conf(dynette: Dynette, file: Path) -> None:
             raise RuntimeError(f"Unknown domain {domain}, no tld matches!")
         domains[tld].append({"name": domain, "key": encode_key(key)})
 
-    print(domains)
     named_conf = template.render(domains=domains)
     file.write_text(named_conf)
 
