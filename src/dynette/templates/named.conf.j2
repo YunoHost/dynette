@@ -1,9 +1,9 @@
-{%- for domain in domains -%}
-zone "{{ domain.name }}" {
+{%- for domain, subdomains in domains.items() -%}
+zone "{{ domain }}" {
     type master;
-    file "/var/lib/bind/{{ domain.name }}.db";
+    file "/var/lib/bind/{{ domain }}.db";
     update-policy {
-        {%- for subdomain in domain.subdomains %}
+        {%- for subdomain in subdomains %}
         grant {{ subdomain.name }}. name {{ subdomain.name }}. A AAAA TXT MX CAA;
         grant {{ subdomain.name }}. name *.{{ subdomain.name }}. A AAAA;
         grant {{ subdomain.name }}. name mail._domainkey.{{ subdomain.name }}. TXT;
@@ -17,7 +17,7 @@ zone "{{ domain.name }}" {
         {%- endfor %}
     };
 };
-{% for subdomain in domain.subdomains %}
+{% for subdomain in subdomains %}
 key {{ subdomain.name }}. {
     algorithm hmac-sha512;
     secret "{{ subdomain.key }}";

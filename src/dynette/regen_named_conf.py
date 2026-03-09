@@ -1,41 +1,66 @@
 #!/usr/bin/env python3
 
+import argparse
+import base64
 import subprocess
 from pathlib import Path
 
 import jinja2
 import yaml
 
-DYNETTE_DIR = Path(__file__).resolve().parent
-TEMPLATES_DIR = DYNETTE_DIR / "templates"
-
-CONFIG_FILE = Path("./config.yml")
+from .dynette import Dynette
 
 
-def main() -> None:
-    config = yaml.safe_load(CONFIG_FILE.open())
-    db_folder = Path(config["DB_FOLDER"])
+def encode_key(key: bytes) -> str:
+    """
+    Format the key as expected by Named:
+    base64 but split as 56 chars, a space, the rest.
+    """
+    key64 = base64.b64encode(key).decode()
+    return key64[:56] + " " + key64[56:]
 
-    domains = [{"name": domain, "subdomains": []} for domain in config["DOMAINS"]]
 
-    for infos in domains:
-        domain = infos["name"]
-        for file in db_folder.glob(f"*.{domain}.key"):
-            subdomain = file.name.rsplit(".", 1)[0]
-            key = file.read_text().strip()
-            infos["subdomains"].append({"name": subdomain, "key": key})
-
-    template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATES_DIR)
+def generate_named_conf(dynette: Dynette, file: Path) -> None:
+    templates_dir = Path(__file__).resolve().parent / "templates"
+    template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
     template_environ = jinja2.Environment(loader=template_loader)
     template = template_environ.get_template("named.conf.j2")
 
-    named_conf = template.render(domains=domains)
-    Path("/etc/bind/named.conf.local").write_text(named_conf)
+    domains = {domain: [] for domain in dynette.tlds}
 
-    subprocess.check_call(
-        ["chown", "-R", "bind:bind", "/etc/bind/named.conf.local", "/var/lib/bind/"]
+    for domain, key, _ in dynette.iter():
+        tld = next((tld for tld in dynette.tlds if domain.endswith(f".{tld}")), None)
+        if tld is None:
+            raise RuntimeError(f"Unknown domain {domain}, no tld matches!")
+        domains[tld].append({"name": domain, "key": encode_key(key)})
+
+    print(domains)
+    named_conf = template.render(domains=domains)
+    file.write_text(named_conf)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", type=Path, default=Path("./config.yml"))
+    parser.add_argument(
+        "-o", "--output", type=Path, default=Path("/etc/bind/named.conf.local")
     )
-    subprocess.check_call(["/usr/sbin/rndc", "reload"])
+    parser.add_argument(
+        "-r", "--reload", action=argparse.BooleanOptionalAction, default=True
+    )
+    args = parser.parse_args()
+
+    config = yaml.safe_load(args.config.open())
+    db_folder = Path(config["DB_FOLDER"])
+    dynette = Dynette(db_folder, config["DOMAINS"])
+
+    generate_named_conf(dynette, args.output)
+
+    if args.reload:
+        subprocess.check_call(
+            ["chown", "-R", "bind:bind", args.output, "/var/lib/bind/"]
+        )
+        subprocess.check_call(["rndc", "reload"])
 
 
 if __name__ == "__main__":

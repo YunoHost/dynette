@@ -1,4 +1,3 @@
-import base64
 import hmac
 import logging
 import re
@@ -45,24 +44,9 @@ class Dynette:
         cur.close()
         self.db.commit()
 
-    # def _domain_key(self, domain: str) -> Path:
-    #     return self.db_path / f"{domain}.key"
-
-    # def _domain_pwd(self, domain: str) -> Path:
-    #     return self.db_path / f"{domain}.recovery_password"
-
-    def _encode_key(self, key: bytes) -> str:
-        """
-        Format the key as expected by Named:
-        base64 but split as 56 chars, a space, the rest.
-        """
-        key64 = base64.b64encode(key).decode()
-        return key64[:56] + " " + key64[56:]
-
     def _get(self, domain: str) -> tuple[bytes, str | None] | None:
-        cur = self.db.execute(
-            "select key, password from domains where name = ?", (domain,)
-        )
+        query = "select key, password from domains where name = ?"
+        cur = self.db.execute(query, (domain,))
         assert isinstance(cur, sqlite3.Cursor)
         result = cur.fetchone()
         if result is None:
