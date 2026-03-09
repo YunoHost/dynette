@@ -1,7 +1,9 @@
+from werkzeug.exceptions import Forbidden
 import base64
 import hmac
 import logging
 import re
+import sqlite3
 from pathlib import Path
 
 import bcrypt
@@ -16,17 +18,38 @@ class ForbiddenError(Exception):
 
 
 class Dynette:
-    def __init__(self, db_path: Path, tlds: list[str]) -> None:
+    def __init__(self, db_folder: Path, tlds: list[str]) -> None:
         self.log = logging.getLogger("Dynette")
-        self.db_path = db_path
+        self.db_folder = db_folder
+        self.db_path = self.db_folder / "domains.sql"
         self.tlds = tlds
-        self.log.debug("Initializing Dynette at %s for %s", db_path, tlds)
+        self.log.debug(
+            "Initializing Dynette at %s for domains: %s", self.db_path, ", ".join(tlds)
+        )
+        self.db = sqlite3.connect(self.db_path)
+        self._initialize()
 
-    def _domain_key(self, domain: str) -> Path:
-        return self.db_path / f"{domain}.key"
+    def _initialize(self) -> None:
+        cur = self.db.cursor()
+        query = "PRAGMA user_version"
+        current_version = next(cur.execute(query))[0]
+        if current_version == 1:
+            return
+        # query = """select count(name) from sqlite_master where type='table' and name='domains'"""
+        # if cur.execute(query).fetchone()[0] == 1
+        #     print("Table exists.")
+        schema = "create table domains(name TEXT NOT NULL UNIQUE, key BLOB NOT NULL, password TEXT)"
+        cur.execute(schema)
+        query = "PRAGMA user_version = 1"
+        cur.execute(query)
+        cur.close()
+        self.db.commit()
 
-    def _domain_pwd(self, domain: str) -> Path:
-        return self.db_path / f"{domain}.recovery_password"
+    # def _domain_key(self, domain: str) -> Path:
+    #     return self.db_path / f"{domain}.key"
+
+    # def _domain_pwd(self, domain: str) -> Path:
+    #     return self.db_path / f"{domain}.recovery_password"
 
     def _encode_key(self, key: bytes) -> str:
         """
@@ -36,18 +59,28 @@ class Dynette:
         key64 = base64.b64encode(key).decode()
         return key64[:56] + " " + key64[56:]
 
+    def _get(self, domain: str) -> tuple[bytes, str | None] | None:
+        cur = self.db.execute("select key, password from domains where name = ?", (domain, ))
+        assert isinstance(cur, sqlite3.Cursor)
+        result = cur.fetchone()
+        if result is None:
+            return None
+        return (result[0], result[1])
+
     def _check_key(self, domain: str, key: bytes) -> None:
-        realkey = self._domain_key(domain).read_text()
-        if not hmac.compare_digest(self._encode_key(key), realkey):
+        creds = self._get(domain)
+        assert creds is not None
+        realkey = creds[0]
+        if not hmac.compare_digest(key, realkey):
             raise ForbiddenError(f"Invalid key for {domain}")
 
     def _check_pwd(self, domain: str, pwd: str) -> None:
-        pwdfile = self._domain_pwd(domain)
-        if not pwdfile.exists():
-            raise ForbiddenError(f"Password passed but no pwdfile for {domain}")
-        pwd64 = pwdfile.read_text()
-        pwdhashed = base64.b64decode(pwd64)
-        if not bcrypt.checkpw(pwd.encode(), pwdhashed):
+        creds = self._get(domain)
+        assert creds is not None
+        realpwd = creds[1]
+        if realpwd is None:
+            raise ForbiddenError(f"Password passed but no password set for {domain}")
+        if not bcrypt.checkpw(pwd.encode(), realpwd.encode()):
             raise ForbiddenError(f"Invalid password for {domain}")
 
     def validate(self, domain: str) -> None:
@@ -59,11 +92,16 @@ class Dynette:
             raise ValueError("This subdomain is not handled by this dynette server.")
 
     def available(self, domain: str) -> bool:
-        return not self._domain_key(domain).exists()
+        return self._get(domain) is None
 
     def register(self, domain: str, key: bytes, pwd: str | None) -> None:
-        self._domain_key(domain).write_text(self._encode_key(key))
-        if pwd:
+        query = "insert into domains values(?, ?, ?)"
+        try:
+            self.db.execute(query, (domain, key, pwd)).close()
+        except sqlite3.IntegrityError:
+            raise ForbiddenError(f"Domain {domain} is already registered") from None
+        self.db.commit()
+        if pwd is not None:
             self.set_password(domain, b"", pwd, check=False)
 
     def set_password(
@@ -73,9 +111,12 @@ class Dynette:
             raise ValueError("Password should be between 8 and 1024 long")
         if check:
             self._check_key(domain, key)
-        hashed = bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14))
-        encoded = base64.b64encode(hashed).decode()
-        self._domain_pwd(domain).write_text(encoded)
+        hashed = bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14)).decode()
+        query = "update domains set password = ? where name = ?"
+        cur = self.db.execute(query, (hashed, domain))
+        if cur.rowcount == 0:
+            raise ForbiddenError(f"Can't update password for non-existing domain {domain}")
+        self.db.commit()
 
     def delete(self, domain: str, key: bytes | None, pwd: str | None) -> None:
         if key:
@@ -86,5 +127,5 @@ class Dynette:
             # Shouldnt happen, this is checked before
             raise ForbiddenError(f"No key or password passed for {domain}")
 
-        self._domain_key(domain).unlink(missing_ok=True)
-        self._domain_pwd(domain).unlink(missing_ok=True)
+        query = "delete from domains where name = ?"
+        self.db.execute(query, (domain, ))
