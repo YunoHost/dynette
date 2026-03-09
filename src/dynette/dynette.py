@@ -77,6 +77,8 @@ class Dynette:
 
     def _check_pwd(self, domain: str, pwd: str) -> None:
         creds = self._get(domain)
+        if creds is None:
+            raise ValueError(f"Can't check password for non-existing domain {domain}")
         assert creds is not None
         realpwd = creds[1]
         if realpwd is None:
@@ -95,8 +97,9 @@ class Dynette:
     def available(self, domain: str) -> bool:
         return self._get(domain) is None
 
-    def register(self, domain: str, key: bytes, pwd: str | None) -> None:
+    def register(self, domain: str, key: bytes | str, pwd: str | None) -> None:
         query = "insert into domains values(?, ?, ?)"
+        key = key.encode() if isinstance(key, str) else key
         try:
             self.db.execute(query, (domain, key, pwd)).close()
         except sqlite3.IntegrityError:
@@ -106,8 +109,9 @@ class Dynette:
             self.set_password(domain, b"", pwd, check=False)
 
     def set_password(
-        self, domain: str, key: bytes, pwd: str, check: bool = True
+        self, domain: str, key: bytes | str, pwd: str, check: bool = True
     ) -> None:
+        key = key.encode() if isinstance(key, str) else key
         if 8 > len(pwd) > 1024:
             raise ValueError("Password should be between 8 and 1024 long")
         if check:
@@ -116,10 +120,11 @@ class Dynette:
         query = "update domains set password = ? where name = ?"
         cur = self.db.execute(query, (hashed, domain))
         if cur.rowcount == 0:
-            raise ForbiddenError(f"Can't update password for non-existing domain {domain}")
+            raise ValueError(f"Can't update password for non-existing domain {domain}")
         self.db.commit()
 
-    def delete(self, domain: str, key: bytes | None, pwd: str | None) -> None:
+    def delete(self, domain: str, key: bytes | str | None, pwd: str | None) -> None:
+        key = key.encode() if isinstance(key, str) else key
         if key:
             self._check_key(domain, key)
         elif pwd:
@@ -129,4 +134,4 @@ class Dynette:
             raise ForbiddenError(f"No key or password passed for {domain}")
 
         query = "delete from domains where name = ?"
-        self.db.execute(query, (domain, ))
+        self.db.execute(query, (domain,))
