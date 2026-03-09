@@ -17,7 +17,7 @@ class Bind9Config:
         self.named_data_dir = named_data_dir.resolve()
         templates_dir = Path(__file__).resolve().parent / "templates"
         template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
-        self.template_environ = jinja2.Environment(loader=template_loader)
+        self.template_environ = jinja2.Environment(loader=template_loader, keep_trailing_newline=True)
 
     def gen_named_conf(self) -> None:
         output = self.named_conf_dir / "named.conf.local"
@@ -25,7 +25,7 @@ class Bind9Config:
         output.write_text(template.render(named_conf_dir=self.named_conf_dir))
 
     def gen_zone_conf(self, tld: str, domain: str, key: bytes) -> None:
-        output = self.named_conf_dir / tld / f"{domain}.conf"
+        output = self.named_conf_dir / "domains" / tld / f"{domain}.conf"
         output.parent.mkdir(exist_ok=True)
         template = self.template_environ.get_template("zone.conf.j2")
         output.write_text(
@@ -39,6 +39,8 @@ class Bind9Config:
 
     def gen_zone_db(self, tld: str, domain: str) -> None:
         output = self.named_data_dir / tld / f"{domain}.db"
+        if output.exists():
+            return
         output.parent.mkdir(exist_ok=True)
         template = self.template_environ.get_template("zone.db.j2")
         output.write_text(template.render(domain=domain))
