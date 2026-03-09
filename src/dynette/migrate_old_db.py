@@ -20,7 +20,8 @@ def main() -> None:
     dynette = Dynette(db_folder, config["DOMAINS"])
 
     for keyfile in db_folder.glob("*.key"):
-        domain = keyfile.name.removeprefix(".key")
+        domain = keyfile.name.removesuffix(".key")
+        dynette.validate(domain)
         passwordfile = db_folder / f"{domain}.recovery_password"
         key = base64.b64decode(keyfile.read_text().replace(" ", ""))
         if passwordfile.exists():
