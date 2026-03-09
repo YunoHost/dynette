@@ -12,12 +12,13 @@ from .dynette import Dynette
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=Path, default=Path("config.yml"))
-    parser.add_argument("-o", "--output", type=Path, default=Path("domains.sql"))
+    parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
 
     config = yaml.safe_load(args.config.open())
-    db_folder = Path(config["DB_FOLDER"])
-    dynette = Dynette(args.output, config["DOMAINS"])
+    db_folder = Path(config["LEGACY_DB_FOLDER"])
+    output = args.output or Path(config["DB_PATH"])
+    dynette = Dynette(output, config["DOMAINS"])
 
     for item, keyfile in enumerate(db_folder.glob("*.key")):
         domain = keyfile.name.removesuffix(".key")

@@ -50,10 +50,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         on_breach=limiter_api_response,
     )
 
-    db_folder = Path(app.config["DB_FOLDER"]).resolve()
-    assert db_folder.is_dir(), "You should create the DB folder declared in the config"
-
-    db_path = db_folder / "domains.sql"
+    db_path = Path(app.config["DB_PATH"]).resolve()
     dynette = Dynette(db_path, app.config["DOMAINS"])
     if app.config.get("TESTING"):
         dynette.log.setLevel(logging.DEBUG)

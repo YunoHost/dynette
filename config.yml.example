@@ -1,3 +1,5 @@
 DOMAINS: [nohost.me, noho.st, ynh.fr]
-DB_FOLDER: /var/dynette/db/
+# This is only used for the migration script
+LEGACY_DB_FOLDER: /var/dynette/db/
+DB_PATH: ./domains.sql
 LIMIT_EXEMPTED_IPS: []

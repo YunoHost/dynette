@@ -38,7 +38,7 @@ def app() -> Generator[Flask]:
                 "DOMAINS": ["test.tld"],
                 "LIMIT_EXEMPTED_IPS": [],
                 "TESTING": True,
-                "DB_FOLDER": tempdir,
+                "DB_PATH": tempdir / "domains.sql",
             }
         )
 

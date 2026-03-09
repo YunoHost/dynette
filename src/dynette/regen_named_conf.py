@@ -50,8 +50,8 @@ def main() -> None:
     args = parser.parse_args()
 
     config = yaml.safe_load(args.config.open())
-    db_folder = Path(config["DB_FOLDER"])
-    dynette = Dynette(db_folder / "domains.sql", config["DOMAINS"])
+    db_path = Path(config["DB_PATH"])
+    dynette = Dynette(db_path, config["DOMAINS"])
 
     generate_named_conf(dynette, args.output)
 
