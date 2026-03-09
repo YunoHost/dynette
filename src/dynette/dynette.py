@@ -3,6 +3,7 @@ import hmac
 import logging
 import re
 import sqlite3
+from collections.abc import Generator
 from pathlib import Path
 
 import bcrypt
@@ -135,3 +136,7 @@ class Dynette:
 
         query = "delete from domains where name = ?"
         self.db.execute(query, (domain,))
+
+    def iter(self) -> Generator[tuple[str, bytes, str | None]]:
+        query = "select name, key, password from domains order by name"
+        yield from self.db.execute(query)
