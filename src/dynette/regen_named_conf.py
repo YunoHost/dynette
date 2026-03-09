@@ -24,7 +24,7 @@ class Bind9Config:
         template = self.template_environ.get_template("named.conf.local.j2")
         output.write_text(template.render(named_conf_dir=self.named_conf_dir))
 
-    def gen_tld_conf(self, tld: str, domains: list[tuple[str, bytes]]) -> None:
+    def gen_tld_conf(self, tld: str, domains: list[tuple[str, str]]) -> None:
         output = self.named_conf_dir / "domains" / f"{tld}.conf"
         output.parent.mkdir(exist_ok=True)
         template = self.template_environ.get_template("tld.conf.j2")
@@ -88,7 +88,7 @@ def main() -> None:
     generator.gen_named_conf()
 
     for tld in config["DOMAINS"]:
-        domains = [(domain, key) for domain, key, _ in dynette.iter(tld)]
+        domains = [(domain, generator.encode_key(key)) for domain, key, _ in dynette.iter(tld)]
         generator.gen_tld_conf(tld, domains)
         for domain, _ in domains:
             generator.gen_zone_db(tld, domain)
