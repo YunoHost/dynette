@@ -80,19 +80,27 @@ class Dynette:
     def available(self, domain: str) -> bool:
         return self._get(domain) is None
 
-    def register(self, domain: str, key: bytes | str, pwd: str | None) -> None:
+    def register(
+        self, domain: str, key: bytes | str, pwd: str | None, commit: bool = True
+    ) -> None:
         query = "insert into domains values(?, ?, ?)"
         key = key.encode() if isinstance(key, str) else key
         try:
             self.db.execute(query, (domain, key, pwd)).close()
         except sqlite3.IntegrityError:
             raise ForbiddenError(f"Domain {domain} is already registered") from None
-        self.db.commit()
         if pwd is not None:
-            self.set_password(domain, b"", pwd, check=False)
+            self.set_password(domain, b"", pwd, check=False, commit=False)
+        if commit:
+            self.db.commit()
 
     def set_password(
-        self, domain: str, key: bytes | str, pwd: str, check: bool = True
+        self,
+        domain: str,
+        key: bytes | str,
+        pwd: str,
+        check: bool = True,
+        commit: bool = True,
     ) -> None:
         key = key.encode() if isinstance(key, str) else key
         if 8 > len(pwd) > 1024:
@@ -104,7 +112,8 @@ class Dynette:
         cur = self.db.execute(query, (hashed, domain))
         if cur.rowcount == 0:
             raise ValueError(f"Can't update password for non-existing domain {domain}")
-        self.db.commit()
+        if commit:
+            self.db.commit()
 
     def delete(self, domain: str, key: bytes | str | None, pwd: str | None) -> None:
         key = key.encode() if isinstance(key, str) else key
