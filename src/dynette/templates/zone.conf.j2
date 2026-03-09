@@ -1,0 +1,21 @@
+zone "{{ domain }}" {
+    type master;
+    file "{{ named_data_dir }}/{{ tld }}/{{ domain }}.db";
+    update-policy {
+        grant {{ domain }}. name {{ domain }}. A AAAA TXT MX CAA;
+        grant {{ domain }}. name *.{{ domain }}. A AAAA;
+        grant {{ domain }}. name mail._domainkey.{{ domain }}. TXT;
+        grant {{ domain }}. name _dmarc.{{ domain }}. TXT;
+        grant {{ domain }}. name _xmpp-client._tcp.{{ domain }}. SRV;
+        grant {{ domain }}. name _xmpp-server._tcp.{{ domain }}. SRV;
+        grant {{ domain }}. name xmpp-upload.{{ domain }}. A AAAA CNAME;
+        grant {{ domain }}. name muc.{{ domain }}. A AAAA CNAME;
+        grant {{ domain }}. name vjud.{{ domain }}. A AAAA CNAME;
+        grant {{ domain }}. name pubsub.{{ domain }}. A AAAA CNAME;
+    };
+};
+
+key {{ domain }}. {
+    algorithm hmac-sha512;
+    secret "{{ key }}";
+};

@@ -11,39 +11,67 @@ import yaml
 from .dynette import Dynette
 
 
-def encode_key(key: bytes) -> str:
-    """
-    Format the key as expected by Named:
-    base64 but split as 56 chars, a space, the rest.
-    """
-    key64 = base64.b64encode(key).decode()
-    return key64[:56] + " " + key64[56:]
+class Bind9Config:
+    def __init__(self, named_conf_dir: Path, named_data_dir: Path) -> None:
+        self.named_conf_dir = named_conf_dir.resolve()
+        self.named_data_dir = named_data_dir.resolve()
+        templates_dir = Path(__file__).resolve().parent / "templates"
+        template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
+        self.template_environ = jinja2.Environment(loader=template_loader)
+
+    def gen_named_conf(self) -> None:
+        output = self.named_conf_dir / "named.conf.local"
+        template = self.template_environ.get_template("named.conf.local.j2")
+        output.write_text(template.render(named_conf_dir=self.named_conf_dir))
+
+    def gen_zone_conf(self, tld: str, domain: str, key: bytes) -> None:
+        output = self.named_conf_dir / tld / f"{domain}.conf"
+        output.parent.mkdir(exist_ok=True)
+        template = self.template_environ.get_template("zone.conf.j2")
+        output.write_text(
+            template.render(
+                tld=tld,
+                domain=domain,
+                key=self.encode_key(key),
+                named_data_dir=self.named_data_dir,
+            )
+        )
+
+    def gen_zone_db(self, tld: str, domain: str) -> None:
+        output = self.named_data_dir / tld / f"{domain}.db"
+        output.parent.mkdir(exist_ok=True)
+        template = self.template_environ.get_template("zone.db.j2")
+        output.write_text(template.render(domain=domain))
+
+    @staticmethod
+    def encode_key(key: bytes) -> str:
+        """
+        Format the key as expected by Named:
+        base64 but split as 56 chars, a space, the rest.
+        """
+        key64 = base64.b64encode(key).decode()
+        return key64[:56] + " " + key64[56:]
 
 
-def generate_named_conf(dynette: Dynette, file: Path) -> None:
-    templates_dir = Path(__file__).resolve().parent / "templates"
-    template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
-    template_environ = jinja2.Environment(loader=template_loader)
-    template = template_environ.get_template("named.conf.j2")
+# def generate_named_conf(dynette: Dynette, file: Path) -> None:
+#     domains = {domain: [] for domain in dynette.tlds}
 
-    domains = {domain: [] for domain in dynette.tlds}
+#     generator = Bind9Config()
 
-    for domain, key, _ in dynette.iter():
-        tld = next((tld for tld in dynette.tlds if domain.endswith(f".{tld}")), None)
-        if tld is None:
-            raise RuntimeError(f"Unknown domain {domain}, no tld matches!")
-        domains[tld].append({"name": domain, "key": encode_key(key)})
+#     for domain, key, _ in dynette.iter():
+#         tld = next((tld for tld in dynette.tlds if domain.endswith(f".{tld}")), None)
+#         if tld is None:
+#             raise RuntimeError(f"Unknown domain {domain}, no tld matches!")
+#         domains[tld].append({"name": domain, "key": encode_key(key)})
 
-    named_conf = template.render(domains=domains)
-    file.write_text(named_conf)
+#     named_conf = template.render(domains=domains)
+#     file.write_text(named_conf)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=Path, default=Path("./config.yml"))
-    parser.add_argument(
-        "-o", "--output", type=Path, default=Path("/etc/bind/named.conf.local")
-    )
+    parser.add_argument("-o", "--output", type=Path, default=Path("/etc/bind/"))
     parser.add_argument(
         "-r", "--reload", action=argparse.BooleanOptionalAction, default=True
     )
@@ -53,7 +81,15 @@ def main() -> None:
     db_path = Path(config["DB_PATH"])
     dynette = Dynette(db_path, config["DOMAINS"])
 
-    generate_named_conf(dynette, args.output)
+    generator = Bind9Config(args.output, args.output)
+    generator.gen_named_conf()
+
+    for domain, key, _ in dynette.iter():
+        tld = next((tld for tld in dynette.tlds if domain.endswith(f".{tld}")), None)
+        if tld is None:
+            raise RuntimeError(f"Unknown domain {domain}, no tld matches!")
+        generator.gen_zone_conf(tld, domain, key)
+        generator.gen_zone_db(tld, domain)
 
     if args.reload:
         subprocess.check_call(
