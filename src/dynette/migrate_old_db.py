@@ -23,14 +23,14 @@ def main() -> None:
         domain = keyfile.name.removesuffix(".key")
         print(f"{item}\t{domain}\r", end="")
         dynette.validate(domain)
-        passwordfile = db_folder / f"{domain}.recovery_password"
         key = base64.b64decode(keyfile.read_text().replace(" ", ""))
+        dynette.register(domain, key, None, commit=False)
+
+        passwordfile = db_folder / f"{domain}.recovery_password"
         if passwordfile.exists():
             password = base64.b64decode(passwordfile.read_text()).decode()
-        else:
-            password = None
+            dynette.set_password(domain, b"", password, is_hashed=True, commit=False, check=False)
 
-        dynette.register(domain, key, password, commit=False)
     dynette.db.commit()
 
 

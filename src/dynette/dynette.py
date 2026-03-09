@@ -101,6 +101,7 @@ class Dynette:
         key: bytes | str,
         pwd: str,
         check: bool = True,
+        is_hashed: bool = False,
         commit: bool = True,
     ) -> None:
         key = key.encode() if isinstance(key, str) else key
@@ -108,7 +109,11 @@ class Dynette:
             raise ValueError("Password should be between 8 and 1024 long")
         if check:
             self._check_key(domain, key)
-        hashed = bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14)).decode()
+        hashed = (
+            pwd
+            if is_hashed
+            else bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14)).decode()
+        )
         query = "update domains set password = ? where name = ?"
         cur = self.db.execute(query, (hashed, domain))
         if cur.rowcount == 0:
