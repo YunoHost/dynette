@@ -28,7 +28,8 @@ def main() -> None:
         else:
             password = None
 
-        dynette.register(domain, key, password)
+        dynette.register(domain, key, password, commit=False)
+    dynette.db.commit()
 
 
 if __name__ == "__main__":
