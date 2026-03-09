@@ -54,6 +54,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     dynette = Dynette(db_path, app.config["DOMAINS"])
     if app.config.get("TESTING"):
         dynette.log.setLevel(logging.DEBUG)
+    else:
+        dynette.log.setLevel(logging.INFO)
 
     def _decode_key(key64: str) -> bytes:
         """
