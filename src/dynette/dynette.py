@@ -1,4 +1,3 @@
-from werkzeug.exceptions import Forbidden
 import base64
 import hmac
 import logging
@@ -31,16 +30,16 @@ class Dynette:
 
     def _initialize(self) -> None:
         cur = self.db.cursor()
-        query = "PRAGMA user_version"
+        query = "pragma user_version"
         current_version = next(cur.execute(query))[0]
         if current_version == 1:
             return
         # query = """select count(name) from sqlite_master where type='table' and name='domains'"""
         # if cur.execute(query).fetchone()[0] == 1
         #     print("Table exists.")
-        schema = "create table domains(name TEXT NOT NULL UNIQUE, key BLOB NOT NULL, password TEXT)"
+        schema = "create table domains(name text not null unique, key blob not null, password text)"
         cur.execute(schema)
-        query = "PRAGMA user_version = 1"
+        query = "pragma user_version = 1"
         cur.execute(query)
         cur.close()
         self.db.commit()
@@ -60,7 +59,9 @@ class Dynette:
         return key64[:56] + " " + key64[56:]
 
     def _get(self, domain: str) -> tuple[bytes, str | None] | None:
-        cur = self.db.execute("select key, password from domains where name = ?", (domain, ))
+        cur = self.db.execute(
+            "select key, password from domains where name = ?", (domain,)
+        )
         assert isinstance(cur, sqlite3.Cursor)
         result = cur.fetchone()
         if result is None:
