@@ -71,7 +71,8 @@ class Bind9Config:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=Path, default=Path("./config.yml"))
-    parser.add_argument("-o", "--output", type=Path, default=Path("/etc/bind/"))
+    parser.add_argument("-b", "--bind-conf-dir", type=Path, default=Path("/etc/bind/"))
+    parser.add_argument("-d", "--bind-data-dir", type=Path, default=Path("/etc/bind/"))
     parser.add_argument(
         "-r", "--reload", action=argparse.BooleanOptionalAction, default=True
     )
@@ -81,7 +82,7 @@ def main() -> None:
     db_path = Path(config["DB_PATH"])
     dynette = Dynette(db_path, config["DOMAINS"])
 
-    generator = Bind9Config(args.output, args.output)
+    generator = Bind9Config(args.bind_conf_dir, args.bind_data_dir)
     generator.gen_named_conf()
 
     for domain, key, _ in dynette.iter():
