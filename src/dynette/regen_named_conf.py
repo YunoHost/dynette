@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 
 import jinja2
-import yaml
 
+from .config import Config
 from .dynette import Dynette
 
 
@@ -81,15 +81,16 @@ def main() -> None:
         "-r", "--reload", action=argparse.BooleanOptionalAction, default=True
     )
     args = parser.parse_args()
+    config = Config(args.config)
 
-    config = yaml.safe_load(args.config.open())
-    db_path = Path(config["DB_PATH"])
-    dynette = Dynette(db_path, config["DOMAINS"])
+    dynette = Dynette(config.database, config.tlds)
 
-    generator = Bind9Config(args.bind_conf_dir, args.bind_data_dir)
+    conf_dir: Path = args.bind_conf_dir or config.bind.config_dir
+    data_dir: Path = args.bind_data_dir or config.bind.database_dir
+    generator = Bind9Config(conf_dir, data_dir)
     generator.gen_named_conf()
 
-    for tld in config["DOMAINS"]:
+    for tld in config.tlds:
         domains = [
             (domain, generator.encode_key(key)) for domain, key, _ in dynette.iter(tld)
         ]
@@ -98,9 +99,7 @@ def main() -> None:
             generator.gen_zone_db(tld, domain)
 
     if args.reload:
-        subprocess.check_call(
-            ["chown", "-R", "bind:bind", args.output, "/var/lib/bind/"]
-        )
+        subprocess.check_call(["chown", "-R", "bind:bind", conf_dir, data_dir])
         subprocess.check_call(["rndc", "reload"])
 
 

@@ -4,8 +4,7 @@ import argparse
 import base64
 from pathlib import Path
 
-import yaml
-
+from .config import Config
 from .dynette import Dynette
 
 
@@ -15,10 +14,13 @@ def main() -> None:
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
 
-    config = yaml.safe_load(args.config.open())
-    db_folder = Path(config["LEGACY_DB_FOLDER"])
-    output = args.output or Path(config["DB_PATH"])
-    dynette = Dynette(output, config["DOMAINS"])
+    config = Config(args.config)
+
+    assert config.legacy_db_folder is not None, "Please set legacy_db_folder in config!"
+    db_folder = Path(config.legacy_db_folder)
+
+    output: Path = args.output or Path(config.database)
+    dynette = Dynette(output, config.tlds)
 
     for item, keyfile in enumerate(db_folder.glob("*.key")):
         domain = keyfile.name.removesuffix(".key")
