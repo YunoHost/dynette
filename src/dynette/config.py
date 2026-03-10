@@ -6,8 +6,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 model_config = ConfigDict(
-    validate_default = True,
-    extra = "forbid",
+    validate_default=True,
+    extra="forbid",
 )
 
 
