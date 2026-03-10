@@ -19,7 +19,7 @@ dependencies = [
     "PyYAML~=6.0",
     "redis~=7.0",
     "werkzeug~=3.0",
-    "zonefile-parser~=0.1",
+    "zonefile-parser @ git+https://github.com/yunohost/zonefile-parser@support_multiple_origin"
 ]
 
 [dependency-groups]
