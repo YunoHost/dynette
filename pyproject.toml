@@ -19,6 +19,7 @@ dependencies = [
     "PyYAML~=6.0",
     "redis~=7.0",
     "werkzeug~=3.0",
+    "zonefile-parser~=0.1",
 ]
 
 [dependency-groups]
@@ -34,6 +35,7 @@ client = [
 [project.scripts]
 regen_named_conf = "dynette.regen_named_conf:main"
 migrate_old_db = "dynette.migrate_old_db:main"
+migrate_old_zones = "dynette.migrate_old_zones:main"
 
 [tool.uv]
 package = true
