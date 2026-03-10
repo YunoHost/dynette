@@ -3,6 +3,7 @@
 {% set key = domain[1] %}
 zone "{{ name }}" {
     type master;
+    serial-update-method date;
     file "{{ named_data_dir }}/{{ tld }}/{{ name }}.db";
     update-policy {
         grant {{ name }}. name {{ name }}. A AAAA TXT MX CAA;
