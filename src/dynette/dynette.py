@@ -77,7 +77,7 @@ class Dynette:
             raise ValueError(f"This is not a valid domain: {domain}")
         if len(domain.split(".")) != 3 or domain.split(".", 1)[-1] not in self.tlds:
             raise ValueError(
-                f"This subdomain is not handled by this dynette server: {domain}."
+                f"This domain is not handled by this dynette server: {domain}."
             )
 
     def available(self, domain: str) -> bool:

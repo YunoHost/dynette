@@ -102,7 +102,7 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
             return {"error": str(err)}, 400
 
         if not dynette.available(domain):
-            return {"error": f"Subdomain already taken: {domain}"}, 409
+            return {"error": f"Domain already taken: {domain}"}, 409
 
         return f'"Domain {domain} is available"', 200
 
@@ -153,7 +153,7 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
         try:
             dynette.validate(subdomain)
             if dynette.available(subdomain):
-                return {"error": "Subdomain already deleted"}, 409
+                return {"error": "Domain doesn't exist, can't delete"}, 409
             dynette.delete(subdomain, key, recovery_password)
 
         except (TypeError, ValueError) as err:
@@ -174,7 +174,7 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
         try:
             dynette.validate(subdomain)
             if dynette.available(subdomain):
-                return {"error": "Subdomain not registered"}, 404
+                return {"error": "Domain not registered"}, 404
             dynette.set_password(subdomain, _decode_key(keystr), recovery_password)
 
         except (TypeError, ValueError) as err:
