@@ -1,5 +1,21 @@
-DOMAINS: [nohost.me, noho.st, ynh.fr]
-# This is only used for the migration script
-LEGACY_DB_FOLDER: /var/dynette/db/
-DB_PATH: ./domains.sql
-LIMIT_EXEMPTED_IPS: []
+# list of the top-level domains to manage
+tlds:
+  - noho.st
+  - nohost.me
+  - ynh.fr
+
+# list of IP addresses that can spam dynette
+limit_exempted_ips: []
+
+# Path to the SQlite database
+database: __DATA_DIR__/domains.sql
+
+# Path to the legacy database (only for migration)
+legacy_db_folder: /var/dynette/db/
+
+bind:
+  config_dir: /etc/bind
+  database_dir: /var/lib/binds
+
+# Enable testing configuration
+# testing: true

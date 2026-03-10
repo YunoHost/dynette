@@ -3,35 +3,29 @@
 import base64
 import logging
 from pathlib import Path
-from typing import Any
 
-import yaml
 from flask import Flask, Response, jsonify, make_response, request
 from flask.typing import ResponseReturnValue
 from flask_limiter import Limiter, RequestLimit
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from .config import Config
 from .dynette import Dynette, ForbiddenError
 
 
-def create_app(
-    test_config: dict[str, Any] | None = None, logger: logging.Logger | None = None
-) -> Flask:
+def create_app(logger: logging.Logger | None = None) -> Flask:
     config_file = Path.cwd() / "config.yml"
     app = Flask(__name__)
-    app.config.from_file(str(config_file), load=yaml.safe_load)
-    if test_config is not None:
-        app.config.update(test_config)
+    config = Config(config_file)
 
     # cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # type: ignore
 
     def trusted_ip() -> bool:
         # This is for example the CI, or developers testing new developments
-        exempted_ips: list[str] = app.config.get("LIMIT_EXEMPTED_IPS", [])
         ips = (request.remote_addr, request.environ.get("HTTP_X_FORWARDED_HOST"))
-        return any(ip in exempted_ips for ip in ips)
+        return any(ip in config.limit_exempted_ips for ip in ips)
 
     def limiter_api_response(request_limit: RequestLimit) -> Response:
         return make_response(jsonify({"error": "Too Many Requests"}), 429)
@@ -40,11 +34,8 @@ def create_app(
         get_remote_address,
         app=app,
         default_limits=["50 per hour"],
-        storage_uri=(
-            "memory://"  # <- For development
-            if app.config.get("TESTING")
-            else "redis://localhost:6379"
-        ),
+        # For development
+        storage_uri=("memory://" if config.testing else "redis://localhost:6379"),
         storage_options={"socket_connect_timeout": 30},
         strategy="fixed-window",  # or "moving-window"
         application_limits_exempt_when=trusted_ip,
@@ -52,8 +43,7 @@ def create_app(
         on_breach=limiter_api_response,
     )
 
-    db_path = Path(app.config["DB_PATH"]).resolve()
-    dynette = Dynette(db_path, app.config["DOMAINS"])
+    dynette = Dynette(config.database.resolve(), config.tlds)
 
     if logger is not None:
         print(f"using logger handlers {logger.handlers} at level {logger.level}")
@@ -62,7 +52,7 @@ def create_app(
         dynette.log.handlers = logger.handlers
         dynette.log.setLevel(logger.level)
 
-    if app.config.get("TESTING"):
+    if config.testing:
         dynette.log.setLevel(logging.DEBUG)
 
     def _decode_key(key64: str) -> bytes:
@@ -100,7 +90,7 @@ def create_app(
     @app.route("/domains")
     @limiter.exempt
     def domains() -> ResponseReturnValue:
-        return jsonify(app.config["DOMAINS"]), 200
+        return jsonify(config.tlds), 200
 
     @app.route("/test/<string:domain>")
     @app.route("/domains/<string:domain>", methods=["GET"])

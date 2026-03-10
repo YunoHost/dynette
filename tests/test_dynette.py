@@ -9,6 +9,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+import yaml
 from flask import Flask
 from flask.testing import FlaskClient, FlaskCliRunner
 
@@ -32,15 +33,18 @@ def app() -> Generator[Flask]:
         tempfile.TemporaryDirectory() as tempdir_str,
         working_directory(tempdir := Path(tempdir_str)),
     ):
-        (tempdir / "config.yml").touch()
-        app = create_app(
-            {
-                "DOMAINS": ["test.tld"],
-                "LIMIT_EXEMPTED_IPS": [],
-                "TESTING": True,
-                "DB_PATH": tempdir / "domains.sql",
-            }
-        )
+        config: dict = {
+            "tlds": ["test.tld"],
+            "limit_exempted_ips": [],
+            "database": str(tempdir / "domains.sql"),
+            "bind": {
+                "config_dir": "/etc/bind",
+                "database_dir": "/var/lib/binds",
+            },
+            "testing": True,
+        }
+        (tempdir / "config.yml").write_text(yaml.dump(config))
+        app = create_app()
 
         # other setup can go here
 
