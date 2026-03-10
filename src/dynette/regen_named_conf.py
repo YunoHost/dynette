@@ -17,7 +17,9 @@ class Bind9Config:
         self.named_data_dir = named_data_dir.resolve()
         templates_dir = Path(__file__).resolve().parent / "templates"
         template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
-        self.template_environ = jinja2.Environment(loader=template_loader, keep_trailing_newline=True)
+        self.template_environ = jinja2.Environment(
+            loader=template_loader, keep_trailing_newline=True
+        )
 
     def gen_named_conf(self) -> None:
         output = self.named_conf_dir / "named.conf.local"
@@ -88,7 +90,9 @@ def main() -> None:
     generator.gen_named_conf()
 
     for tld in config["DOMAINS"]:
-        domains = [(domain, generator.encode_key(key)) for domain, key, _ in dynette.iter(tld)]
+        domains = [
+            (domain, generator.encode_key(key)) for domain, key, _ in dynette.iter(tld)
+        ]
         generator.gen_tld_conf(tld, domains)
         for domain, _ in domains:
             generator.gen_zone_db(tld, domain)
