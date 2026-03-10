@@ -74,9 +74,9 @@ class Bind9Config:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=Path, default=Path("./config.yml"))
-    parser.add_argument("-b", "--bind-conf-dir", type=Path, default=Path("/etc/bind/"))
-    parser.add_argument("-d", "--bind-data-dir", type=Path, default=Path("/etc/bind/"))
+    parser.add_argument("-c", "--config", type=Path, default=Path("config.yml"))
+    parser.add_argument("-b", "--bind-conf-dir", type=Path)
+    parser.add_argument("-d", "--bind-data-dir", type=Path)
     parser.add_argument(
         "-r", "--reload", action=argparse.BooleanOptionalAction, default=True
     )
