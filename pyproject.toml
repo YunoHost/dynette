@@ -3,7 +3,7 @@ name = "dynette"
 version = "1.0.0"
 description = "YunoHost DynDNS Server"
 readme = "README.md"
-license = { text = "GPL-3.0-only" }
+license = { text = "AGPL-3.0-only" }
 authors = [
     { name = "YunoHost", email = "yunohost@yunohost.org" }
 ]
