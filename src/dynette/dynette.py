@@ -31,14 +31,29 @@ class Dynette:
         cur = self.db.cursor()
         query = "pragma user_version"
         current_version = next(cur.execute(query))[0]
+
+        if current_version == 0:
+            self.log.info("Creating database...")
+            columns = [
+                "name text not null unique",
+                "key blob not null",
+                "password text",
+                "last_query int default 0"
+            ]
+            query = f"create table domains({", ".join(columns)})"
+            cur.execute(query)
+            query = "pragma user_version = 2"
+            cur.execute(query)
+            current_version = 2
+
         if current_version == 1:
-            return
-        self.log.info("Creating database...")
-        schema = "name text not null unique, key blob not null, password text"
-        query = f"create table domains({schema})"
-        cur.execute(query)
-        query = "pragma user_version = 1"
-        cur.execute(query)
+            self.log.info("Updating database schema...")
+            query = "alter table domains add column last_query int default 0"
+            cur.execute(query)
+            query = "pragma user_version = 2"
+            cur.execute(query)
+            current_version = 2
+
         cur.close()
         self.db.commit()
 
@@ -143,6 +158,14 @@ class Dynette:
         query = "delete from domains where name = ?"
         self.db.execute(query, (domain,)).close()
         self.db.commit()
+
+    def set_last_query(self, domain: str, epoch: int, commit: bool = True) -> bool:
+        query = "update domains set last_query = ? where name = ?"
+        cur = self.db.execute(query, (epoch, domain))
+        cur.close()
+        if commit:
+            self.db.commit()
+        return cur.rowcount != 0
 
     def iter(self, tld: str | None = None) -> Generator[tuple[str, bytes, str | None]]:
         tldwhere = f"where name like '%.{tld}'" if tld else ""
