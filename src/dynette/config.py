@@ -27,6 +27,13 @@ class Config(BaseModel):
 
     bind: Bind
 
+    class DNSTap(BaseModel):
+        model_config = model_config
+        database: Path
+        socket: Path
+
+    dnstap: DNSTap
+
     testing: bool = False
 
     def __init__(self, path: Path) -> None:
