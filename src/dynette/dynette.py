@@ -42,6 +42,9 @@ class Dynette:
         cur.close()
         self.db.commit()
 
+    def commit(self) -> None:
+        self.db.commit()
+
     def _get(self, domain: str) -> tuple[bytes, str | None] | None:
         query = "select key, password from domains where name = ?"
         cur = self.db.execute(query, (domain,))
