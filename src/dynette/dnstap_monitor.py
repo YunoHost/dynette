@@ -114,7 +114,6 @@ class DnsData(dict):
 
     def __setitem__(self, key, value) -> None:
         super().__setitem__(key, value)
-        self.counter = self.counter + 1
         self._autosave_if_needed()
 
     def __delitem__(self, key) -> None:
@@ -123,7 +122,6 @@ class DnsData(dict):
 
     def update(self, *args, **kwargs) -> None:
         super().update(*args, **kwargs)
-        self.counter = self.counter + 1
         self._autosave_if_needed()
 
     def pop(self, *args) -> None:
@@ -174,6 +172,7 @@ class DnsTap(Consumer):
                     if domain.endswith(zone):
                         now = datetime.now().replace(microsecond=0).isoformat()
                         self.data[zone].update({domain: now})
+                        self.data.counter += 1
                         self.data.save()
         except Exception as e:
             print(f"Error: {e}")
