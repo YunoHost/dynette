@@ -68,6 +68,7 @@ class DnsData(dict):
     def __init__(self, path: Path, zones: list[str]) -> None:
         self.path = path
         self.zones = zones
+        self.counter = 0
         self.save_interval = timedelta(minutes=15)
         self._last_save: datetime | None = None
         super().__init__()
@@ -106,13 +107,14 @@ class DnsData(dict):
         self._last_save = now
 
         if len(self) != 0:
-            print(f"Data saved on {now} with {self._zones_str()}")
+            print(f"Data saved on {now} with {self._zones_str()}, {self.counter} since startup")
 
     def _autosave_if_needed(self) -> None:
         self.save(force=False)
 
     def __setitem__(self, key, value) -> None:
         super().__setitem__(key, value)
+        self.counter = self.counter + 1
         self._autosave_if_needed()
 
     def __delitem__(self, key) -> None:
@@ -121,6 +123,7 @@ class DnsData(dict):
 
     def update(self, *args, **kwargs) -> None:
         super().update(*args, **kwargs)
+        self.counter = self.counter + 1
         self._autosave_if_needed()
 
     def pop(self, *args) -> None:
