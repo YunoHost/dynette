@@ -111,7 +111,7 @@ def main() -> None:
     config = Config(args.config)
     dynette = Dynette(config.database, config.tlds)
 
-    socket_address = config.dnstap.socket
+    socket_address = config.bind.dnstap_socket
 
     print("Starting...")
     data = DnsData(dynette, config.tlds)

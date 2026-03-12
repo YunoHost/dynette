@@ -24,14 +24,9 @@ class Config(BaseModel):
         model_config = model_config
         config_dir: Path
         database_dir: Path
+        dnstap_socket: Path
 
     bind: Bind
-
-    class DNSTap(BaseModel):
-        model_config = model_config
-        socket: Path
-
-    dnstap: DNSTap
 
     testing: bool = False
 
