@@ -197,7 +197,7 @@ def main() -> None:
     print("Starting...")
     data = DnsData(pickle_db_path, config.tlds)
     consumer = DnsTap(data, config.tlds)
-    Server(UnixSocket(socket_address), consumer).listen()
+    Server(UnixSocket(str(socket_address)), consumer).listen()
     data.save(force=True)
 
 
