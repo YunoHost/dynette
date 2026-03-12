@@ -111,10 +111,11 @@ class Dynette:
             self.db.execute(query, (domain, key, pwd)).close()
         except sqlite3.IntegrityError:
             raise ForbiddenError(f"Domain {domain} is already registered") from None
+        finally:
+            if commit:
+                self.db.commit()
         if pwd is not None:
             self.set_password(domain, b"", pwd, check=False, commit=False)
-        if commit:
-            self.db.commit()
 
     def set_password(
         self,
@@ -136,13 +137,15 @@ class Dynette:
             if is_hashed
             else bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14)).decode()
         )
-        query = "update domains set password = ? where name = ?"
-        cur = self.db.execute(query, (hashed, domain))
-        cur.close()
-        if cur.rowcount == 0:
-            raise ValueError(f"Can't update password for non-existing domain {domain}")
-        if commit:
-            self.db.commit()
+        try:
+            query = "update domains set password = ? where name = ?"
+            cur = self.db.execute(query, (hashed, domain))
+            cur.close()
+            if cur.rowcount == 0:
+                raise ValueError(f"Can't update password for non-existing domain {domain}")
+        finally:
+            if commit:
+                self.db.commit()
 
     def delete(self, domain: str, key: bytes | str | None, pwd: str | None) -> None:
         self.log.info("Deleting %s", domain)
@@ -155,16 +158,20 @@ class Dynette:
             # Shouldnt happen, this is checked before
             raise ForbiddenError(f"No key or password passed for {domain}")
 
-        query = "delete from domains where name = ?"
-        self.db.execute(query, (domain,)).close()
-        self.db.commit()
+        try:
+            query = "delete from domains where name = ?"
+            self.db.execute(query, (domain,)).close()
+        finally:
+            self.db.commit()
 
     def set_last_query(self, domain: str, epoch: int, commit: bool = True) -> bool:
-        query = "update domains set last_query = ? where name = ?"
-        cur = self.db.execute(query, (epoch, domain))
-        cur.close()
-        if commit:
-            self.db.commit()
+        try:
+            query = "update domains set last_query = ? where name = ?"
+            cur = self.db.execute(query, (epoch, domain))
+            cur.close()
+        finally:
+            if commit:
+                self.db.commit()
         return cur.rowcount != 0
 
     def iter(self, tld: str | None = None) -> Generator[tuple[str, bytes, str | None]]:
