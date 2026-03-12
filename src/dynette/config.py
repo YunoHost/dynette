@@ -29,7 +29,6 @@ class Config(BaseModel):
 
     class DNSTap(BaseModel):
         model_config = model_config
-        database: Path
         socket: Path
 
     dnstap: DNSTap

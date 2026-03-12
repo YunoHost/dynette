@@ -111,7 +111,6 @@ def main() -> None:
     config = Config(args.config)
     dynette = Dynette(config.database, config.tlds)
 
-    pickle_db_path = config.dnstap.database
     socket_address = config.dnstap.socket
 
     print("Starting...")
