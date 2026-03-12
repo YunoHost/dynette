@@ -20,7 +20,10 @@ dependencies = [
     "PyYAML~=6.0",
     "redis~=7.0",
     "werkzeug~=3.0",
-    "zonefile-parser @ git+https://github.com/yunohost/zonefile-parser@support_multiple_origin"
+    "zonefile-parser @ git+https://github.com/yunohost/zonefile-parser@support_multiple_origin",
+
+    # shodohflo dependencies
+    "dnspython",
 ]
 
 [dependency-groups]
@@ -35,6 +38,7 @@ client = [
 
 [project.scripts]
 regen_named_conf = "dynette.regen_named_conf:main"
+dnstap_monitor = "dynette.dnstap_monitor:main"
 migrate_old_db = "dynette.migrate_old_db:main"
 migrate_old_zones = "dynette.migrate_old_zones:main"
 
