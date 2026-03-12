@@ -153,40 +153,31 @@ class DnsTap(Consumer):
         The loop. Don't forget to call server.socket.close() and allocate a new
         Server() before calling server.listen() again.
         """
-        # print('Data:\n{}'.format(hexify(frame)))
+        # print(f"Data:\n{hexify(frame)}")
         try:
             self.protobuf = dnstap.Dnstap(frame, log_wire_type=False)
+            message: dnstap.Message = self.protobuf.field("message")[1]
+            try:
+                query: dnstap.dns.message.QueryMessage = message.field("query_message")[1]
+            except KeyError:
+                # No query
+                return True
 
-            message = str(self.protobuf.field("message")[1])
-            # <Message type=TYPE_AUTH_RESPONSE socket_family=SOCKET_FAMILY_INET6
-            #   socket_protocol=SOCKET_PROTOCOL_UDP
-            #   query_address=2001:b000:180:8002:0:2:9:97
-            #   response_address=2001:910:1400:115::13
-            #   query_port=23626 response_port=1053
-            #   query_zone=b'\x03ynh\x02fr\x00' response_time_sec=1766303014
-            #   response_time_nsec=707127201 response_message=<
-            #       status=NOERROR question=<rep-art.ynh.fr. IN AAAA> answer=<>
-            #   |>
-            # |>
-            pattern = (
-                ".* type=TYPE_AUTH_RESPONSE .* status=NOERROR question=<([\w\-\.]+) .*"
-            )
-            fqdn = re.findall(pattern, message)[0].lower()
-            domain = None
-            for zone in self.zones:
-                escapedzone = zone.replace(".", r"\.")
-                try:
-                    finder = rf"[\w\-\.]*?([\w\-]+)\.{escapedzone}\."
-                    domain = re.findall(finder, fqdn)[0]
-                    now = datetime.now().replace(microsecond=0).isoformat()
-                    self.data[zone].update({domain: now})
-                    self.data.save()
-                except Exception as e:
-                    #                    print(f"Error: {e}, {finder} {fqdn} {domain}")
-                    pass
+            if query is None:
+                return True
+
+            questions: list = query.question
+            for question in questions:
+                domain = str(question).split()[0].removesuffix(".")
+                print(f"Got request for {domain=}")
+                for zone in self.zones:
+                    if domain.endswith(zone):
+                        now = datetime.now().replace(microsecond=0).isoformat()
+                        self.data[zone].update({domain: now})
+                        self.data.save()
         except Exception as e:
             print(f"Error: {e}")
-            pass
+            return True
 
         return True
 
