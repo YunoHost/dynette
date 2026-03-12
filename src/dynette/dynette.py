@@ -38,9 +38,9 @@ class Dynette:
                 "name text not null unique",
                 "key blob not null",
                 "password text",
-                "last_query int default 0"
+                "last_query int default 0",
             ]
-            query = f"create table domains({", ".join(columns)})"
+            query = f"create table domains({', '.join(columns)})"
             cur.execute(query)
             query = "pragma user_version = 2"
             cur.execute(query)
@@ -142,7 +142,9 @@ class Dynette:
             cur = self.db.execute(query, (hashed, domain))
             cur.close()
             if cur.rowcount == 0:
-                raise ValueError(f"Can't update password for non-existing domain {domain}")
+                raise ValueError(
+                    f"Can't update password for non-existing domain {domain}"
+                )
         finally:
             if commit:
                 self.db.commit()
