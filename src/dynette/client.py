@@ -2,6 +2,7 @@
 
 import argparse
 import base64
+import hashlib
 
 import requests
 
@@ -19,12 +20,15 @@ class DynetteClient:
                 msg = msg["error"]
             raise RuntimeError(msg)
 
-    def _data(self, key: str | None, password: str | None) -> dict[str, str]:
+    def _data(
+        self, domain: str, key: str | None, password: str | None
+    ) -> dict[str, str]:
         data = {}
         if key:
             data["key"] = base64.b64encode(key.encode()).decode()
         if password:
-            data["recovery_password"] = password
+            hashpwd = hashlib.sha256(f"{domain}:{password}".encode())
+            data["recovery_password"] = hashpwd.hexdigest()
         return data
 
     def tlds(self) -> list[str]:
@@ -39,14 +43,14 @@ class DynetteClient:
     def register(self, domain: str, key: str | None, password: str | None) -> None:
         assert key is not None
         assert len(key) == 64
-        data = self._data(key, password)
+        data = self._data(domain, key, password)
         response = requests.post(
             f"{self.server}/domains/{domain}?", data=data, verify=False
         )
         self._raise_err(response)
 
     def unregister(self, domain: str, key: str | None, password: str | None) -> None:
-        data = self._data(key, password)
+        data = self._data(domain, key, password)
         response = requests.delete(
             f"{self.server}/domains/{domain}", data=data, verify=False
         )
@@ -55,7 +59,7 @@ class DynetteClient:
     def chpwd(self, domain: str, key: str | None, password: str | None) -> None:
         response = requests.put(
             f"{self.server}/domains/{domain}/recovery_password",
-            data=self._data(key, password),
+            data=self._data(domain, key, password),
             verify=False,
         )
         self._raise_err(response)
