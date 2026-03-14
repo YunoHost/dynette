@@ -1,15 +1,15 @@
-zone "{{ tld }}" {
-    type master;
-    serial-update-method date;
-    file "{{ named_data_dir }}/{{ tld }}.db";
-    update-policy {
-        grant * selfsub .;
-    };
-};
-
 {% for domain in domains %}
 {% set name = domain[0] %}
 {% set key = domain[1] %}
+zone "{{ name }}" {
+    type master;
+    serial-update-method date;
+    file "{{ named_data_dir }}/{{ tld }}/{{ name }}.db";
+    update-policy {
+        grant * selfzone .;
+    };
+};
+
 key {{ name }}. {
     algorithm hmac-sha512;
     secret "{{ key }}";
