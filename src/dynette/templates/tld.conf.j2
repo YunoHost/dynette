@@ -1,11 +1,10 @@
-{% for domain in domains %}
-{% set name = domain[0] %}
-{% set key = domain[1] %}
-zone "{{ name }}" {
+zone "{{ tld }}" {
     type master;
     serial-update-method date;
-    file "{{ named_data_dir }}/{{ tld }}/{{ name }}.db";
+    file "{{ named_data_dir }}/{{ tld }}.db";
     update-policy {
+        {% for domain in domains %}
+        {% set name = domain[0] %}
         grant {{ name }}. name {{ name }}. A AAAA TXT MX CAA;
         grant {{ name }}. name *.{{ name }}. A AAAA;
         grant {{ name }}. name mail._domainkey.{{ name }}. TXT;
@@ -16,9 +15,13 @@ zone "{{ name }}" {
         grant {{ name }}. name muc.{{ name }}. A AAAA CNAME;
         grant {{ name }}. name vjud.{{ name }}. A AAAA CNAME;
         grant {{ name }}. name pubsub.{{ name }}. A AAAA CNAME;
+        {% endfor %}
     };
 };
 
+{% for domain in domains %}
+{% set name = domain[0] %}
+{% set key = domain[1] %}
 key {{ name }}. {
     algorithm hmac-sha512;
     secret "{{ key }}";

@@ -39,13 +39,13 @@ class Bind9Config:
             )
         )
 
-    def gen_zone_db(self, tld: str, domain: str) -> None:
-        output = self.named_data_dir / tld / f"{domain}.db"
+    def gen_zone_db(self, tld: str) -> None:
+        output = self.named_data_dir / f"{tld}.db"
         if output.exists():
             return
         output.parent.mkdir(exist_ok=True)
         template = self.template_environ.get_template("zone.db.j2")
-        output.write_text(template.render(domain=domain))
+        output.write_text(template.render(domain=tld))
 
     @staticmethod
     def encode_key(key: bytes) -> str:
@@ -95,8 +95,7 @@ def main() -> None:
             (domain, generator.encode_key(key)) for domain, key, _ in dynette.iter(tld)
         ]
         generator.gen_tld_conf(tld, domains)
-        for domain, _ in domains:
-            generator.gen_zone_db(tld, domain)
+        generator.gen_zone_db(tld)
 
     if args.reload:
         subprocess.check_call(["chown", "-R", "bind:bind", conf_dir, data_dir])
