@@ -89,6 +89,9 @@ class Dynette:
         if not bcrypt.checkpw(pwd.encode(), realpwd.encode()):
             raise ForbiddenError(f"Invalid password for {domain}")
 
+    def _hash_pwd(self, pwd: str) -> str:
+        return bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14)).decode()
+
     def validate(self, domain: str) -> None:
         if not isinstance(domain, str):
             raise TypeError(f"Domain is not a string: {domain}")
@@ -108,6 +111,7 @@ class Dynette:
         self.log.info("Registering %s", domain)
         query = "insert into domains (name, key, password) values(?, ?, ?)"
         key = key.encode() if isinstance(key, str) else key
+        pwd = self._hash_pwd(pwd) if isinstance(pwd, str) else pwd
         try:
             self.db.execute(query, (domain, key, pwd)).close()
         except sqlite3.IntegrityError:
@@ -115,8 +119,6 @@ class Dynette:
         finally:
             if commit:
                 self.db.commit()
-        if pwd is not None:
-            self.set_password(domain, b"", pwd, check=False, commit=False)
         self.db_flag.touch()
 
     def set_password(
@@ -124,21 +126,16 @@ class Dynette:
         domain: str,
         key: bytes | str,
         pwd: str,
-        check: bool = True,
-        is_hashed: bool = False,
+        migration: bool = False,
         commit: bool = True,
     ) -> None:
         self.log.debug("Setting password %s for %s", pwd, domain)
         key = key.encode() if isinstance(key, str) else key
         if 8 > len(pwd) > 1024:
             raise ValueError("Password should be between 8 and 1024 long")
-        if check:
+        if not migration:
             self._check_key(domain, key)
-        hashed = (
-            pwd
-            if is_hashed
-            else bcrypt.hashpw(password=pwd.encode(), salt=bcrypt.gensalt(14)).decode()
-        )
+        hashed = pwd if migration else self._hash_pwd(pwd)
         try:
             query = "update domains set password = ? where name = ?"
             cur = self.db.execute(query, (hashed, domain))
