@@ -106,7 +106,6 @@ class DnsTap(Consumer):
         print(f'Finished. Partial data: "{hexify(partial_frame)}"')
 
 
-
 class SystemDOrPathUnixSocket(UnixSocket):
     def get_socket(self) -> socket.socket:
         # First try to find the SystemD socket...
