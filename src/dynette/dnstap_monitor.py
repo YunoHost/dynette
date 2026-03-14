@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import os
 import socket
 from pathlib import Path
 
@@ -105,12 +106,19 @@ class DnsTap(Consumer):
         print(f'Finished. Partial data: "{hexify(partial_frame)}"')
 
 
-class CustomUnixSocket(UnixSocket):
-    """Doesn't clean the socket path before starting"""
 
+class SystemDOrPathUnixSocket(UnixSocket):
     def get_socket(self) -> socket.socket:
+        # First try to find the SystemD socket...
+        listen_fds = int(os.environ.get("LISTEN_FDS", "0"))
+        if listen_fds >= 1:
+            sock = socket.fromfd(3, socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            return sock
+
+        self.clean_path()
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.bind(self.path)
+        sock.bind(str(self.path))
         return sock
 
 
@@ -126,7 +134,8 @@ def main() -> None:
     print("Starting...")
     data = DnsData(dynette, config.tlds)
     consumer = DnsTap(data, config.tlds)
-    Server(CustomUnixSocket(str(socket_address)), consumer).listen()
+    socket = SystemDOrPathUnixSocket(socket_address)
+    Server(socket, consumer).listen()
     data.save(force=True)
 
 
