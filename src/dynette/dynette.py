@@ -25,6 +25,7 @@ class Dynette:
             "Initializing Dynette at %s for domains: %s", self.db_path, ", ".join(tlds)
         )
         self.db = sqlite3.connect(self.db_path)
+        self.db_flag = self.db_path.parent / (self.db_path.name + ".flag")
         self._initialize()
 
     def _initialize(self) -> None:
@@ -116,6 +117,7 @@ class Dynette:
                 self.db.commit()
         if pwd is not None:
             self.set_password(domain, b"", pwd, check=False, commit=False)
+        self.db_flag.touch()
 
     def set_password(
         self,
@@ -148,6 +150,7 @@ class Dynette:
         finally:
             if commit:
                 self.db.commit()
+        self.db_flag.touch()
 
     def delete(self, domain: str, key: bytes | str | None, pwd: str | None) -> None:
         self.log.info("Deleting %s", domain)
@@ -165,6 +168,7 @@ class Dynette:
             self.db.execute(query, (domain,)).close()
         finally:
             self.db.commit()
+        self.db_flag.touch()
 
     def set_last_query(self, domain: str, epoch: int, commit: bool = True) -> bool:
         try:

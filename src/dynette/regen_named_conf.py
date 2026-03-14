@@ -84,6 +84,7 @@ def main() -> None:
     config = Config(args.config)
 
     dynette = Dynette(config.database, config.tlds)
+    dynette.db_flag.unlink()
 
     conf_dir: Path = args.bind_conf_dir or config.bind.config_dir
     data_dir: Path = args.bind_data_dir or config.bind.database_dir
