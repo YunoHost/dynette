@@ -38,8 +38,9 @@ def app() -> Generator[Flask]:
             "limit_exempted_ips": [],
             "database": str(tempdir / "domains.sql"),
             "bind": {
-                "config_dir": "/etc/bind",
-                "database_dir": "/var/lib/binds",
+                "config_dir": str(tempdir / "bind/etc"),
+                "database_dir": str(tempdir / "bind/lib"),
+                "dnstap_socket": str(tempdir / "dnstap.socket"),
             },
             "testing": True,
         }
