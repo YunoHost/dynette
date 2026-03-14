@@ -107,6 +107,7 @@ class DnsTap(Consumer):
 
 class CustomUnixSocket(UnixSocket):
     """Doesn't clean the socket path before starting"""
+
     def get_socket(self) -> socket.socket:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.path)
