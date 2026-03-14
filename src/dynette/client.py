@@ -32,12 +32,12 @@ class DynetteClient:
         return data
 
     def tlds(self) -> list[str]:
-        response = requests.get(f"{self.server}/domains", verify=False)
+        response = requests.get(f"{self.server}/domains")
         response.raise_for_status()
         return response.json()
 
     def available(self, domain: str) -> bool:
-        response = requests.get(f"{self.server}/domains/{domain}", verify=False)
+        response = requests.get(f"{self.server}/domains/{domain}")
         return response.status_code == 200
 
     def register(self, domain: str, key: str | None, password: str | None) -> None:
@@ -45,22 +45,21 @@ class DynetteClient:
         assert len(key) == 64
         data = self._data(domain, key, password)
         response = requests.post(
-            f"{self.server}/domains/{domain}?", data=data, verify=False
+            f"{self.server}/domains/{domain}?", data=data
         )
         self._raise_err(response)
 
     def unregister(self, domain: str, key: str | None, password: str | None) -> None:
         data = self._data(domain, key, password)
         response = requests.delete(
-            f"{self.server}/domains/{domain}", data=data, verify=False
+            f"{self.server}/domains/{domain}", data=data
         )
         self._raise_err(response)
 
     def chpwd(self, domain: str, key: str | None, password: str | None) -> None:
         response = requests.put(
             f"{self.server}/domains/{domain}/recovery_password",
-            data=self._data(domain, key, password),
-            verify=False,
+            data=self._data(domain, key, password)
         )
         self._raise_err(response)
 
