@@ -105,7 +105,7 @@ class Dynette:
         self, domain: str, key: bytes | str, pwd: str | None, commit: bool = True
     ) -> None:
         self.log.info("Registering %s", domain)
-        query = "insert into domains values(?, ?, ?)"
+        query = "insert into domains (name, key, password) values(?, ?, ?)"
         key = key.encode() if isinstance(key, str) else key
         try:
             self.db.execute(query, (domain, key, pwd)).close()
