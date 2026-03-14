@@ -44,22 +44,18 @@ class DynetteClient:
         assert key is not None
         assert len(key) == 64
         data = self._data(domain, key, password)
-        response = requests.post(
-            f"{self.server}/domains/{domain}?", data=data
-        )
+        response = requests.post(f"{self.server}/domains/{domain}?", data=data)
         self._raise_err(response)
 
     def unregister(self, domain: str, key: str | None, password: str | None) -> None:
         data = self._data(domain, key, password)
-        response = requests.delete(
-            f"{self.server}/domains/{domain}", data=data
-        )
+        response = requests.delete(f"{self.server}/domains/{domain}", data=data)
         self._raise_err(response)
 
     def chpwd(self, domain: str, key: str | None, password: str | None) -> None:
         response = requests.put(
             f"{self.server}/domains/{domain}/recovery_password",
-            data=self._data(domain, key, password)
+            data=self._data(domain, key, password),
         )
         self._raise_err(response)
 

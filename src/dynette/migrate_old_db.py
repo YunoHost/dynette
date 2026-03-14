@@ -32,9 +32,7 @@ def main() -> None:
         passwordfile = db_folder / f"{domain}.recovery_password"
         if passwordfile.exists():
             password = base64.b64decode(passwordfile.read_text()).decode()
-            dynette.set_password(
-                domain, b"", password, migration=True, commit=False
-            )
+            dynette.set_password(domain, b"", password, migration=True, commit=False)
 
     dynette.db.commit()
 
