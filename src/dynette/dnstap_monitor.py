@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import socket
 from pathlib import Path
 
 import dns.message
@@ -104,6 +105,14 @@ class DnsTap(Consumer):
         print(f'Finished. Partial data: "{hexify(partial_frame)}"')
 
 
+class CustomUnixSocket(UnixSocket):
+    """Doesn't clean the socket path before starting"""
+    def get_socket(self) -> socket.socket:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(self.path)
+        return sock
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=Path, default=Path("config.yml"))
@@ -116,7 +125,7 @@ def main() -> None:
     print("Starting...")
     data = DnsData(dynette, config.tlds)
     consumer = DnsTap(data, config.tlds)
-    Server(UnixSocket(str(socket_address)), consumer).listen()
+    Server(CustomUnixSocket(str(socket_address)), consumer).listen()
     data.save(force=True)
 
 
