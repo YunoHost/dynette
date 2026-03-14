@@ -33,7 +33,7 @@ def main() -> None:
         if passwordfile.exists():
             password = base64.b64decode(passwordfile.read_text()).decode()
             dynette.set_password(
-                domain, b"", password, is_hashed=True, commit=False, check=False
+                domain, b"", password, migration=True, commit=False
             )
 
     dynette.db.commit()
