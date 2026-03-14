@@ -1,3 +1,22 @@
-DOMAINS: [nohost.me, noho.st, ynh.fr]
-DB_FOLDER: /var/dynette/db/
-LIMIT_EXEMPTED_IPS: []
+# list of the top-level domains to manage
+tlds:
+  - noho.st
+  - nohost.me
+  - ynh.fr
+
+# list of IP addresses that can spam dynette
+limit_exempted_ips: []
+
+# Path to the SQlite database
+database: __DATA_DIR__/domains.sql
+
+# Path to the legacy database (only for migration)
+legacy_db_folder: /var/dynette/db/
+
+bind:
+  config_dir: /etc/bind
+  database_dir: /var/lib/binds
+  dnstap_socket: /var/run/named/dnstap.sock
+
+# Enable testing configuration
+# testing: true

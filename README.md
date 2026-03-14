@@ -1,29 +1,47 @@
+# Dynette
 
+Dynette is a DynDns registering server based on Bind / Named.
 
+It provides a REST API.
 
-### Setup
+## Setup
+
+Either: 
+
+```bash
+uv sync
+```
+
+or:
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
+venv/bin/pip install -e .
 ```
 
-### Dev
+Then create `config.yml` from `config.yml.example`.
 
+## Client
+
+We provide a client to register / unregister:
 
 ```bash
-FLASK_APP=app.py flask run
+uv run ./src/dynette/client.py <dyndns server> register -d <domain> -k <key>
 ```
 
+## Dev
 
-### Production
+```bash
+uv run flask --debug --app "dynette.app:create_app" run
+```
+
+## Production
 
 - You should also install bind9
 - Include `/etc/bind/named.conf.local` in `/etc/bind/named.conf`
 - Install the following services
 
-##### `dynette.service`
+### `dynette.service`
 
 ```
 # Systemd config
@@ -45,7 +63,7 @@ PrivateTmp=true
 WantedBy=multi-user.target
 ```
 
-##### `dynette-regen-named-conf.service`
+### `dynette-regen-named-conf.service`
 
 ```
 [Unit]
@@ -65,7 +83,7 @@ Group=root
 WantedBy=multi-user.target
 ```
 
-##### `dynette-regen-named-conf.path`
+### `dynette-regen-named-conf.path`
 
 ```
 [Path]
@@ -76,7 +94,7 @@ PathChanged=/var/dynette/db/
 WantedBy=multi-user.target
 ```
 
-##### NGINX conf snippet
+### NGINX conf snippet
 
 ```
 location / {

@@ -1,0 +1,12 @@
+$TTL 10 ; 10 seconds
+{{ domain }}.   IN SOA  ns0.yunohost.org. hostmaster.yunohost.org. (
+                0          ; serial
+                10800      ; refresh (3 hours)
+                3600       ; retry (1 hour)
+                604800     ; expire (1 week)
+                10         ; minimum (10 seconds)
+                )
+$TTL 3600   ; 1 hour
+            NS  ns0.yunohost.org.
+            NS  ns1.yunohost.org.
+            NS  ns2.yunohost.org.

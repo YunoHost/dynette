@@ -1,0 +1,104 @@
+[project]
+name = "dynette"
+version = "1.0.0"
+description = "YunoHost DynDNS Server"
+readme = "README.md"
+license = { text = "AGPL-3.0-only" }
+authors = [
+    { name = "YunoHost", email = "yunohost@yunohost.org" }
+]
+urls.Repository = "https://github.com/yunohost/dynette"
+
+requires-python = ">=3.13"
+dependencies = [
+    "bcrypt~=5.0",
+    "Flask~=3.0",
+    "Flask-Limiter~=3.0",
+    "gunicorn~=23.0",
+    "Jinja2~=3.1",
+    "pydantic~=2.12",
+    "PyYAML~=6.0",
+    "redis~=7.0",
+    "werkzeug~=3.0",
+    "zonefile-parser @ git+https://github.com/yunohost/zonefile-parser@support_multiple_origin",
+
+    # shodohflo dependencies
+    "dnspython",
+]
+
+[dependency-groups]
+test = [
+    "ruff",
+    "mypy",
+    "pytest",
+]
+client = [
+    "requests",
+]
+
+[project.scripts]
+regen_named_conf = "dynette.regen_named_conf:main"
+dnstap_monitor = "dynette.dnstap_monitor:main"
+migrate_old_db = "dynette.migrate_old_db:main"
+migrate_old_zones = "dynette.migrate_old_zones:main"
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "YTT",      # flake8-2020
+    "ANN",      # flake8-annotations
+    "BLE",      # flake8-blind-except
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez
+    "ISC",      # flake8-implicit-str-concat
+    "ICN",      # flake8-import-conventions
+    "LOG",      # flake8-logging
+    "G",        # flake8-logging-format
+    "PIE",      # flake8-pie
+    "Q",        # flake8-quotes
+    "RET",      # flake8-return
+    "SIM",      # flake8-simplify
+    "SLOT",     # flake8-slots
+    "PTH",      # flake8-use-pathlib
+    "FLY",      # flynt
+    "I",        # isort
+    "N",        # pep8-naming
+    "PERF",     # Perflint
+    "E",        # pycodestyle
+    "W",        # pycodestyle
+    "F",        # Pyflakes
+    "PL",       # Pylint
+    "UP",       # pyupgrade
+    "FURB",     # refurb
+    "RUF",      # Ruff-specific rules
+    "TRY",      # tryceratops
+    # "D",
+]
+ignore = [
+    "ANN401",   # any-type
+    "COM812",   # missing-trailing-comma
+    "D203",     # incorrect-blank-line-before-class
+    "PLR0911",  # too-many-return-statements
+    "PLR0912",  # too-many-branches
+    "PLR0913",  # too-many-arguments
+    "PLR0915",  # too-many-statements
+    "PLR2004",  # magic-value-comparison
+    "UP009",    # utf8-encoding-declaration
+    "TRY003",   # raise-vanilla-args
+    "D100",     # undocumented-public-module
+    "D104",     # undocumented-public-package
+    "D105",     # undocumented-magic-method
+    "D200",     # unnecessary-multiline-docstring
+    "D212",     # multi-line-summary-first-line
+    "D401",     # non-imperative-mood
+]
+
+[tool.mypy]
+strict = true
