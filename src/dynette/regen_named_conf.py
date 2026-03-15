@@ -84,6 +84,7 @@ def main() -> None:
     config = Config(args.config)
 
     dynette = Dynette(config.database, config.tlds)
+    dynette.init()
     dynette.db_flag.unlink(missing_ok=True)
 
     conf_dir: Path = args.bind_conf_dir or config.bind.config_dir
@@ -93,7 +94,8 @@ def main() -> None:
 
     for tld in config.tlds:
         domains = [
-            (domain, generator.encode_key(key)) for domain, key, _ in dynette.iter(tld)
+            (domain.name, generator.encode_key(domain.key))
+            for domain in dynette.iter(tld)
         ]
         generator.gen_tld_conf(tld, domains)
         generator.gen_zone_db(tld)

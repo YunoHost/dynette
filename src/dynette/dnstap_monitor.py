@@ -121,6 +121,7 @@ def main() -> None:
     args = parser.parse_args()
     config = Config(args.config)
     dynette = Dynette(config.database, config.tlds)
+    dynette.init()
 
     socket_address = config.bind.dnstap_socket
 

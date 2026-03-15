@@ -21,9 +21,9 @@ dependencies = [
     "redis~=7.0",
     "werkzeug~=3.0",
     "zonefile-parser @ git+https://github.com/yunohost/zonefile-parser@support_multiple_origin",
-
     # shodohflo dependencies
     "dnspython",
+    "sqlalchemy>=2.0.48",
 ]
 
 [dependency-groups]
