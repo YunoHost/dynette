@@ -3,7 +3,7 @@ zone "{{ tld }}" {
     serial-update-method date;
     file "{{ named_data_dir }}/{{ tld }}.db";
     update-policy {
-        grant * selfsub . A AAAA TXT MX CAA CNAME SRV DNAME;
+        grant * selfsub .;
     };
 };
 
