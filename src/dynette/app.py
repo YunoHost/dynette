@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, make_response, request
+from flask.logging import default_handler
 from flask.typing import ResponseReturnValue
 from flask_limiter import Limiter, RequestLimit
 from flask_limiter.util import get_remote_address
@@ -42,6 +43,9 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
         default_limits_exempt_when=trusted_ip,
         on_breach=limiter_api_response,
     )
+
+    root = logging.getLogger()
+    root.addHandler(default_handler)
 
     dynette = Dynette(config.database.resolve(), config.tlds)
 
