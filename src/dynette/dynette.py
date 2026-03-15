@@ -171,10 +171,10 @@ class Dynette:
             self.db.commit()
         self.db_flag.touch()
 
-    def set_last_query(self, domain: str, epoch: int, commit: bool = True) -> bool:
+    def set_last_query(self, data: dict[str, int]) -> int:
         try:
             query = "update domains set last_query = ? where name = ?"
-            cur = self.db.execute(query, (epoch, domain))
+            cur = self.db.execute(query, data.items())
             cur.close()
         finally:
             if commit:

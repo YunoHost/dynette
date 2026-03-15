@@ -44,17 +44,11 @@ class DnsData:
         if not force and self._last_save and now - self._last_save < self.save_interval:
             return
 
-        try:
-            update_count = 0
-            for domain, time in self.domain_times.items():
-                if self.dynette.set_last_query(domain, time, commit=False):
-                    update_count += 1
-            self.domain_times.clear()
-        finally:
-            self.dynette.commit()
-
+        update_count = 0
+        updated = self.dynette.set_last_query(self.domain_times)
+        update_count += updated
+        self.domain_times.clear()
         self._last_save = now
-
         print(
             f"Data saved on {now}, {update_count} updates, {self.counter} since startup"
         )
