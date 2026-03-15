@@ -21,8 +21,12 @@ class Dynette:
         self.log = logging.getLogger("Dynette")
         self.db_path = db_path
         self.tlds = tlds
+
+    def init(self) -> None:
         self.log.debug(
-            "Initializing Dynette at %s for domains: %s", self.db_path, ", ".join(tlds)
+            "Initializing Dynette at %s for domains: %s",
+            self.db_path,
+            ", ".join(self.tlds),
         )
         self.db = sqlite3.connect(self.db_path)
         self.db_flag = self.db_path.parent / (self.db_path.name + ".flag")

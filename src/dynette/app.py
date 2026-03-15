@@ -59,6 +59,8 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
     if config.testing:
         dynette.log.setLevel(logging.DEBUG)
 
+    dynette.init()
+
     def _decode_key(key64: str) -> bytes:
         """
         Key can be provided either as:
