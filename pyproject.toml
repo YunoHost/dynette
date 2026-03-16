@@ -39,6 +39,7 @@ client = [
 [project.scripts]
 regen_named_conf = "dynette.regen_named_conf:main"
 dnstap_monitor = "dynette.dnstap_monitor:main"
+dnstap_stats = "dynette.dnstap_stats:main"
 migrate_old_db = "dynette.migrate_old_db:main"
 migrate_old_zones = "dynette.migrate_old_zones:main"
 
