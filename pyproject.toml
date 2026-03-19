@@ -41,6 +41,7 @@ regen_named_conf = "dynette.regen_named_conf:main"
 dnstap_monitor = "dynette.dnstap_monitor:main"
 migrate_old_db = "dynette.migrate_old_db:main"
 migrate_old_zones = "dynette.migrate_old_zones:main"
+delete_domain = "dynette.delete_domain:main"
 
 [tool.uv]
 package = true
