@@ -21,18 +21,27 @@ venv/bin/pip install -e .
 
 Then create `config.yml` from `config.yml.example`.
 
+## Dev
+
+```bash
+uv run flask --debug --app "dynette.app:create_app" run
+```
+
+## Dynettectl
+
+`dynettectl` is a small utility calling the Dynette library to edit the
+database directly, for example to delete domains:
+
+```bash
+uv run dynettectl -c data/config.yml delete tata.ynh.fr
+```
+
 ## Client
 
 We provide a client to register / unregister:
 
 ```bash
 uv run ./src/dynette/client.py <dyndns server> register -d <domain> -k <key>
-```
-
-## Dev
-
-```bash
-uv run flask --debug --app "dynette.app:create_app" run
 ```
 
 ## Production
