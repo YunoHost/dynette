@@ -135,10 +135,18 @@ class Dynette:
             session.commit()
         self.db_flag.touch()
 
-    def delete(self, domain: str, key: bytes | str | None, pwd: str | None) -> None:
+    def delete(
+        self,
+        domain: str,
+        key: bytes | str | None,
+        pwd: str | None,
+        bypass_auth: bool = False,
+    ) -> None:
         self.log.info("Deleting %s", domain)
         key = key.encode() if isinstance(key, str) else key
-        if key:
+        if bypass_auth:
+            pass
+        elif key:
             self._check_key(domain, key)
         elif pwd:
             self._check_pwd(domain, pwd)
