@@ -7,11 +7,11 @@ import socket
 from pathlib import Path
 
 import dns.message
+from shodohflo.fstrm import Consumer, Server, UnixSocket
+from shodohflo.protobuf import dnstap
 
 from .config import Config
 from .dynette import Dynette
-from .shodohflo.fstrm import Consumer, Server, UnixSocket
-from .shodohflo.protobuf import dnstap
 
 # SHODOHFLO_DIR = Path(__file__).resolve().parent.parent.parent.parent / "shodohflo"
 # sys.path.insert(0, str(SHODOHFLO_DIR))
