@@ -84,13 +84,13 @@ class DnsTap(Consumer):
             if query is None:
                 return True
 
-            query_time: dns.message.QueryMessage = message.field("query_time_sec")[1]
+            query_time = message.field("query_time_sec")[1]
 
             questions: list = query.question
             for question in questions:
                 domain = str(question).split()[0].removesuffix(".")
                 self.data.update(domain, query_time)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error: {e}")
             return True
 

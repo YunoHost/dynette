@@ -18,7 +18,9 @@ class Bind9Config:
         templates_dir = Path(__file__).resolve().parent / "templates"
         template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
         self.template_environ = jinja2.Environment(
-            loader=template_loader, keep_trailing_newline=True
+            loader=template_loader,
+            keep_trailing_newline=True,
+            autoescape=True,
         )
 
     def gen_named_conf(self) -> None:

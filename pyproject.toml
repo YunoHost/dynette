@@ -47,57 +47,29 @@ package = true
 
 [tool.ruff]
 line-length = 88
-
-[tool.ruff.lint]
-select = [
-    "YTT",      # flake8-2020
-    "ANN",      # flake8-annotations
-    "BLE",      # flake8-blind-except
-    "B",        # flake8-bugbear
-    "A",        # flake8-builtins
-    "C4",       # flake8-comprehensions
-    "DTZ",      # flake8-datetimez
-    "ISC",      # flake8-implicit-str-concat
-    "ICN",      # flake8-import-conventions
-    "LOG",      # flake8-logging
-    "G",        # flake8-logging-format
-    "PIE",      # flake8-pie
-    "Q",        # flake8-quotes
-    "RET",      # flake8-return
-    "SIM",      # flake8-simplify
-    "SLOT",     # flake8-slots
-    "PTH",      # flake8-use-pathlib
-    "FLY",      # flynt
-    "I",        # isort
-    "N",        # pep8-naming
-    "PERF",     # Perflint
-    "E",        # pycodestyle
-    "W",        # pycodestyle
-    "F",        # Pyflakes
-    "PL",       # Pylint
-    "UP",       # pyupgrade
-    "FURB",     # refurb
-    "RUF",      # Ruff-specific rules
-    "TRY",      # tryceratops
-    # "D",
-]
-ignore = [
+lint.select = ["ALL"]
+lint.ignore = [
     "ANN401",   # any-type
     "COM812",   # missing-trailing-comma
-    "D203",     # incorrect-blank-line-before-class
+    "CPY",      # Copyrights
+    "D",        # Docstrings
+    "EXE001",   # Shebang is present but file is not executable
+    "EM101",    # Raise messages
+    "EM102",
+    "ERA001",   # Commented out code
+    "C901",     # Complexity
+    "TC002",    # Move third-party import into a type-checking block
     "PLR0911",  # too-many-return-statements
     "PLR0912",  # too-many-branches
     "PLR0913",  # too-many-arguments
     "PLR0915",  # too-many-statements
     "PLR2004",  # magic-value-comparison
-    "UP009",    # utf8-encoding-declaration
+    "S101",     # Use of assert
+    "S603",     # `subprocess` call: check for execution of untrusted input
+    "S607",     # Starting a process with a partial executable path
+    "T201",     # Use of print
     "TRY003",   # raise-vanilla-args
-    "D100",     # undocumented-public-module
-    "D104",     # undocumented-public-package
-    "D105",     # undocumented-magic-method
-    "D200",     # unnecessary-multiline-docstring
-    "D212",     # multi-line-summary-first-line
-    "D401",     # non-imperative-mood
+    "UP009",    # utf8-encoding-declaration
 ]
 
 [tool.mypy]

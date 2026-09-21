@@ -114,7 +114,7 @@ class Dynette:
         self.db_flag.touch()
 
     def set_password(
-        self, domain: str, key: bytes | str, pwd: str, migration: bool = False
+        self, domain: str, key: bytes | str, pwd: str, *, migration: bool = False
     ) -> None:
         self.log.debug("Setting password %s for %s", pwd, domain)
         key = key.encode() if isinstance(key, str) else key
@@ -140,6 +140,7 @@ class Dynette:
         domain: str,
         key: bytes | str | None,
         pwd: str | None,
+        *,
         bypass_auth: bool = False,
     ) -> None:
         self.log.info("Deleting %s", domain)

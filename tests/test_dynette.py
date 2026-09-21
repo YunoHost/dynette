@@ -27,7 +27,7 @@ def working_directory(path: Path) -> Generator:
         os.chdir(prev_cwd)
 
 
-@pytest.fixture()
+@pytest.fixture
 def app() -> Generator[Flask]:
     with (
         tempfile.TemporaryDirectory() as tempdir_str,
@@ -54,22 +54,22 @@ def app() -> Generator[Flask]:
         # clean up / reset resources here
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(app: Flask) -> FlaskClient:
     return app.test_client()
 
 
-@pytest.fixture()
+@pytest.fixture
 def runner(app: Flask) -> FlaskCliRunner:
     return app.test_cli_runner()
 
 
-@pytest.fixture()
+@pytest.fixture
 def valid_key() -> str:
     return base64.b64encode(("a" * 64).encode()).decode()
 
 
-@pytest.fixture()
+@pytest.fixture
 def valid_key_2() -> str:
     return base64.b64encode(("b" * 64).encode()).decode()
 
@@ -88,7 +88,9 @@ def test_home(client: FlaskClient) -> None:
 def test_list(client: FlaskClient) -> None:
     response = client.get("/domains")
     data = response.json
-    assert isinstance(data, list) and (isinstance(elt, str) for elt in data)
+    assert isinstance(data, list)
+    for elt in data:
+        assert isinstance(elt, str)
 
 
 def test_available(client: FlaskClient) -> None:
@@ -167,7 +169,7 @@ def test_wrong_key(client: FlaskClient, valid_key: str, valid_key_2: str) -> Non
 
 def test_password(client: FlaskClient, valid_key: str) -> None:
     domain = "anydomain.test.tld"
-    password = "some password with 'special & chars'"
+    password = "some password with 'special & chars'"  # noqa: S105
     response = client.post(
         f"/key/{format_key(valid_key)}",
         data={"subdomain": domain, "recovery_password": password},

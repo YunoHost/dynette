@@ -29,7 +29,9 @@ def split_tld_into_zones(tld_file: Path, zones_dir: Path, tld: str) -> None:
     templates_dir = Path(__file__).resolve().parent / "templates"
     template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
     template_environ = jinja2.Environment(
-        loader=template_loader, keep_trailing_newline=True
+        loader=template_loader,
+        keep_trailing_newline=True,
+        autoescape=True,
     )
 
     for domain, records in domains.items():

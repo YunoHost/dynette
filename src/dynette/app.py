@@ -21,14 +21,14 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
     config = Config(config_file)
 
     # cf. https://flask-limiter.readthedocs.io/en/stable/recipes.html#deploying-an-application-behind-a-proxy
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # type: ignore
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # ty: ignore[invalid-assignment]
 
     def trusted_ip() -> bool:
         # This is for example the CI, or developers testing new developments
         ips = (request.remote_addr, request.environ.get("HTTP_X_FORWARDED_HOST"))
         return any(ip in config.limit_exempted_ips for ip in ips)
 
-    def limiter_api_response(request_limit: RequestLimit) -> Response:
+    def limiter_api_response(_request_limit: RequestLimit) -> Response:
         return make_response(jsonify({"error": "Too Many Requests"}), 429)
 
     limiter = Limiter(

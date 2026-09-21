@@ -6,6 +6,8 @@ import hashlib
 
 import requests
 
+TIMEOUT = 10
+
 
 class DynetteClient:
     def __init__(self, server: str) -> None:
@@ -32,30 +34,35 @@ class DynetteClient:
         return data
 
     def tlds(self) -> list[str]:
-        response = requests.get(f"{self.server}/domains")
+        response = requests.get(f"{self.server}/domains", timeout=TIMEOUT)
         response.raise_for_status()
         return response.json()
 
     def available(self, domain: str) -> bool:
-        response = requests.get(f"{self.server}/domains/{domain}")
+        response = requests.get(f"{self.server}/domains/{domain}", timeout=TIMEOUT)
         return response.status_code == 200
 
     def register(self, domain: str, key: str | None, password: str | None) -> None:
         assert key is not None
         assert len(key) == 64
         data = self._data(domain, key, password)
-        response = requests.post(f"{self.server}/domains/{domain}?", data=data)
+        response = requests.post(
+            f"{self.server}/domains/{domain}?", data=data, timeout=TIMEOUT
+        )
         self._raise_err(response)
 
     def unregister(self, domain: str, key: str | None, password: str | None) -> None:
         data = self._data(domain, key, password)
-        response = requests.delete(f"{self.server}/domains/{domain}", data=data)
+        response = requests.delete(
+            f"{self.server}/domains/{domain}", data=data, timeout=TIMEOUT
+        )
         self._raise_err(response)
 
     def chpwd(self, domain: str, key: str | None, password: str | None) -> None:
         response = requests.put(
             f"{self.server}/domains/{domain}/recovery_password",
             data=self._data(domain, key, password),
+            timeout=TIMEOUT,
         )
         self._raise_err(response)
 
@@ -82,14 +89,14 @@ def main() -> None:
         case "available":
             print(client.available(args.domain))
         case "register":
-            if client.register(args.domain, args.key, args.password):
-                print("OK")
+            client.register(args.domain, args.key, args.password)
+            print("OK")
         case "unregister":
-            if client.unregister(args.domain, args.key, args.password):
-                print("OK")
+            client.unregister(args.domain, args.key, args.password)
+            print("OK")
         case "password":
-            if client.chpwd(args.domain, args.key, args.password):
-                print("OK")
+            client.chpwd(args.domain, args.key, args.password)
+            print("OK")
 
 
 if __name__ == "__main__":
