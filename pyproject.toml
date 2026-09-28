@@ -35,6 +35,10 @@ test = [
 client = [
     "requests",
 ]
+monitor = [
+    "shodohflo @ git+https://github.com/m4037/shodohflo",
+    "requests",
+]
 
 [project.scripts]
 dynettectl = "dynette.dynettectl:main"
