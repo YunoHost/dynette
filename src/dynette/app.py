@@ -190,4 +190,22 @@ def create_app(logger: logging.Logger | None = None) -> Flask:
 
         return '"OK"', 200
 
+    @app.route("/domains/<string:subdomain>/check_password", methods=["GET"])
+    @limiter.limit("5 per hour", exempt_when=trusted_ip)
+    def check_password(subdomain: str) -> ResponseReturnValue:
+        dynette.validate(subdomain)
+        if dynette.available(subdomain):
+            return {"error": "Domain doesn't exist, can't check credentials"}, 404
+
+        recovery_password = request.form.get("recovery_password")
+        if not recovery_password:
+            return {"error": f"Invalid request: {dict(request.form)}"}, 400
+
+        try:
+            dynette.check_pwd(subdomain, recovery_password)
+        except ForbiddenError:
+            return {"error": "Invalid password"}, 401
+        else:
+            return '"OK"', 200
+
     return app
