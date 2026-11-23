@@ -69,14 +69,14 @@ class Dynette:
             stmt = sa.select(Domain).where(Domain.name == domain)
             return session.execute(stmt).scalar_one_or_none()
 
-    def _check_key(self, domain: str, key: bytes) -> None:
+    def check_key(self, domain: str, key: bytes) -> None:
         creds = self._get(domain)
         if creds is None:
             raise ValueError(f"Can't check key for non-existing domain {domain}")
         if not hmac.compare_digest(key, creds.key):
             raise ForbiddenError(f"Invalid key for {domain}")
 
-    def _check_pwd(self, domain: str, pwd: str) -> None:
+    def check_pwd(self, domain: str, pwd: str) -> None:
         creds = self._get(domain)
         if creds is None:
             raise ValueError(f"Can't check password for non-existing domain {domain}")
@@ -121,7 +121,7 @@ class Dynette:
         if 8 > len(pwd) > 1024:
             raise ValueError("Password should be between 8 and 1024 long")
         if not migration:
-            self._check_key(domain, key)
+            self.check_key(domain, key)
         hashed = pwd if migration else self._hash_pwd(pwd)
         with Session(self.db) as session:
             stmt = (
@@ -147,9 +147,9 @@ class Dynette:
         if bypass_auth:
             pass
         elif key:
-            self._check_key(domain, key)
+            self.check_key(domain, key)
         elif pwd:
-            self._check_pwd(domain, pwd)
+            self.check_pwd(domain, pwd)
         else:
             # Shouldnt happen, this is checked before
             raise ForbiddenError(f"No key or password passed for {domain}")
