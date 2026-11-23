@@ -59,6 +59,20 @@ class DynetteClient:
         )
         self._raise_err(response)
 
+    def check_pwd(self, domain: str, password: str) -> bool:
+        response = requests.get(
+            f"{self.server}/domains/{domain}/check_password",
+            data=self._data(domain, None, password),
+        )
+        match response.status_code:
+            case 200:
+                return True
+            case 401:
+                return False
+            case _:
+                self._raise_err(response)
+                raise AssertionError("unreachable code")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -66,7 +80,14 @@ def main() -> None:
     parser.add_argument(
         "action",
         type=str,
-        choices=["tlds", "available", "register", "unregister", "password"],
+        choices=[
+            "tlds",
+            "available",
+            "register",
+            "unregister",
+            "password",
+            "check-password",
+        ],
     )
     parser.add_argument("-d", "--domain", type=str)
     parser.add_argument("-k", "--key", type=str)
@@ -90,6 +111,11 @@ def main() -> None:
         case "password":
             if client.chpwd(args.domain, args.key, args.password):
                 print("OK")
+        case "check-password":
+            if client.check_pwd(args.domain, args.password):
+                print("OK")
+            else:
+                print("Invalid password")
 
 
 if __name__ == "__main__":
